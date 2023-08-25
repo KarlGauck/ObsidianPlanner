@@ -14,4 +14,4 @@ It uses React and TailwindCSS to create a versatile and beautiful userinterface.
   - Tasks can only be placed into the calendar if respecting traveltime
 - Smart propositions of timemanagement, considering currently unplanned Tasks
 
-This list is very ambitious so it may very well be possible that they wont be implemented in the near future since our time is limited 
+Those goals are very ambitious so it may very well be possible that they wont be implemented in the near future since our time is limited 
