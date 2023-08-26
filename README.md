@@ -3,6 +3,12 @@
 This is a Planner Plugin for Obsidian, copied from the official sample-plugin github (https://github.com/obsidianmd/obsidian-sample-plugin) (https://obsidian.md).
 It uses React and TailwindCSS to create a versatile and beautiful userinterface.
 
+### Currently in progress
+- Todolist
+  - Loading and saving of tasks from/into files
+
+**Next Feature: ** Calendar Component
+
 ### Planned Features
 - A todolist with task (due-date is given)
 - A calendar

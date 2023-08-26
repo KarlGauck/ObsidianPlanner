@@ -1,8 +1,9 @@
 import {ItemView, WorkspaceLeaf} from "obsidian"
 import * as React from "react"
 import * as ReactDom from "react-dom"
-import Calendar from "./Calendar"
+import TaskList from "./TaskList"
 import { createRoot } from "react-dom/client"
+import { AppContext } from "./context"
 
 export const VIEW_TYPE_CALENDAR = "calendar_view"
 
@@ -27,9 +28,9 @@ export class CalendarView extends ItemView
     {
         const root = createRoot(this.containerEl.children[1])
         root.render(
-            <React.StrictMode>
-                <Calendar/>
-            </React.StrictMode>
+            <AppContext.Provider value={this.app}>
+                <TaskList/>
+            </AppContext.Provider>
         )     
     }
 }
