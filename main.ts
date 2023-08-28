@@ -1,5 +1,6 @@
 import { App, Editor, Menu, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { CalendarView, VIEW_TYPE_CALENDAR } from "./CalendarView"
+import { CalendarView, VIEW_TYPE_CALENDAR } from "./src/react/CalendarView"
+import { Task } from "src/logic/interfaces"
 
 export default class ObsidianPlanner extends Plugin 
 {
@@ -14,6 +15,14 @@ export default class ObsidianPlanner extends Plugin
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
 			this.activateView()
 		});
+
+		const folder = this.app.vault.getAbstractFileByPath("obsidianPlanner")
+		if (!folder)
+			this.app.vault.createFolder("obsidianPlanner")
+		const files = this.app.vault.getFiles().filter((file) => file.name === "tasks.md")
+		if (files.length == 0)
+			this.app.vault.create("obsidianPlanner/tasks.md", "")
+
 	}
 
 	onunload() 

@@ -1,29 +1,24 @@
 import * as React from "react"
 import { Notice } from "obsidian"
-import { useApp } from "./hooks"
+import { useApp } from "../../hooks"
+import { Task } from "src/logic/interfaces"
 
-interface Task {
-    name: string,
-    description: string,
-    date: Date,
-    completed: boolean,
-    priority: number
-}
-
-export default function TaskList()
+export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>, onChange: (tasks: Array<Task>) => void})
 {
-    const [tasks, setTasks] = React.useState<Array<Task>>([])
+    const [tasks, setTasks] = React.useState<Array<Task>>(propTasks)
 
     const taskJSX = tasks.map((task, index) => <Task task={task} 
         onToggleCompleted={() => {
             const newTasks = tasks.slice()
             newTasks[index].completed = !newTasks[index].completed
             setTasks(newTasks)
+            onChange(newTasks)
         }}
         onDelete={() => {
             const newTasks = tasks.slice()
             newTasks.remove(newTasks[index])
             setTasks(newTasks)
+            onChange(newTasks)
         }}     
     />)
 
@@ -32,6 +27,8 @@ export default function TaskList()
         const newTasks = tasks.slice()
         newTasks.push(task)
         setTasks(newTasks)
+        onChange(newTasks)
+        new Notice("submitted")
     }
 
     
@@ -48,7 +45,10 @@ function Task({task, onToggleCompleted, onDelete}: {task: Task, onToggleComplete
     return <div className="m-2 flex flex-col gap-3 rounded-xl bg-gray-900 hover:bg-blue-950 p-2">
         <div className="flex">
             <p className="font-sans font-bold text-xl px-2 w-full"> {task.name} </p>
-            <button onClick={onDelete} className="w-6 h-6 text-green-400"> 🗑️ </button>
+            <div className="flex gap-2">
+                <button className="w-6 h-6">🖉</button>
+                <button onClick={onDelete} className="w-6 h-6 text-green-400"> 🗑️ </button>
+            </div>
         </div>
         <div className="flex gap-2 items-center">
             <button onClick={onToggleCompleted} className="w-6 h-6 text-green-400"> {task.completed ? "✓" : ""} </button>
@@ -56,8 +56,8 @@ function Task({task, onToggleCompleted, onDelete}: {task: Task, onToggleComplete
             <div className="flex flex-row w-1/4 gap-3">
                 <div className="text-sm text-green-400"> {task.priority} </div>
                 <div className="flex flex-col">
-                    <p className="text-sm text-blue-200 font-thin"> {task.date.toLocaleDateString()} </p>
-                    <p className="text-sm text-blue-200 font-thin"> {task.date.toLocaleTimeString()} </p>
+                    <p className="text-sm text-blue-200 font-thin"> {new Date(task.date).toLocaleDateString()} </p>
+                    <p className="text-sm text-blue-200 font-thin"> {new Date(task.date).toLocaleTimeString()} </p>
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@ function TaskForm({onSubmit} : {onSubmit: (task: Task) => void})
         name: "",
         description: "",
         date: new Date(),
-        completed: true,
+        completed: false,
         priority: 3
     })
 
