@@ -129,9 +129,11 @@ function TaskForm({initialTask, onSubmit, darkBackground} : {initialTask: Task, 
     let timeString = new Date(task.date).toLocaleTimeString()
     timeString = timeString.slice(0, timeString.lastIndexOf(":"))
 
-    let dateString = new Date(task.date).toLocaleDateString()
-    const [day, month, year] = dateString.split(".")
-    dateString = padLeft(year, 4, "0") + "-" + padLeft(month, 2, "0") + "-" + padLeft(day, 2, "0")
+    const date = new Date(task.date)
+    const day = date.getDate().toString();
+    const month = (date.getMonth() + 1).toString();
+    const year = date.getFullYear().toString();
+    let dateString = padLeft(year, 4, "0") + "-" + padLeft(month, 2, "0") + "-" + padLeft(day, 2, "0")
 
     return <div className={"flex flex-col gap-3 rounded-xl " + (darkBackground ? "bg-gray-900 hover:bg-blue-950" : "bg-gray-800") + " p-5 m-2"}>
         <div>
