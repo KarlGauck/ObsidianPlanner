@@ -1,13 +1,13 @@
 import {ItemView, TFile, WorkspaceLeaf, Notice, App } from "obsidian"
 import * as React from "react"
-import * as ReactDom from "react-dom"
 import TaskList from "./TaskList"
 import { createRoot } from "react-dom/client"
 import { AppContext } from "../../context"
 import { Task } from "src/logic/interfaces"
-import { useApp } from "hooks"
+import { DndContext } from "@dnd-kit/core"
 
 export const VIEW_TYPE_CALENDAR = "calendar_view"
+
 
 export class CalendarView extends ItemView
 {
@@ -55,7 +55,9 @@ export class CalendarView extends ItemView
         const root = createRoot(this.containerEl.children[1])
         await root.render(
             <AppContext.Provider value={this.app}>
-                <TaskList propTasks={tasks} onChange={this.tasksChanged}/>
+                <DndContext>
+                    <TaskList propTasks={tasks} onChange={this.tasksChanged}/>
+                </DndContext>
             </AppContext.Provider>
         )     
     }
