@@ -119,6 +119,7 @@ function Day({data, index}:{data:Day, index:number}) {
         </>
     );
 }
+
 function BetterEvent({task, index}:{task:Task, index:string}) {
     const [height, setHeight] = useState(0);
     const id = "EVENT_CARD_" + index;
@@ -129,20 +130,20 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
     }, 200);
 
     const getOffset = (date: Date) => {
-        console.log(TimeSectionStart + TimeSectionDelta * time_to_dec(date.getHours(), date.getMinutes()));
         return TimeSectionStart + TimeSectionDelta * time_to_dec(date.getHours(), date.getMinutes());
     }
 
+    const [Task, setTask] = useState(task);
+    console.log(Task.date);
     const [offset, setOffset] = useState(getOffset(task.date));
-    console.log(offset, task.date);
 
     const applyTime = () => {
-        let newTask: Task = clone(task);
+        let newTask: Task = clone(Task);
         newTask.date = new Date(newTask.date);
         let decTime = (offset - TimeSectionStart) / TimeSectionDelta;
         newTask.date.setHours(Math.floor(decTime));
         newTask.date.setMinutes((decTime - Math.floor(decTime)) * 60);
-        taskHandler.change_task(newTask);
+        setTask(newTask);
     }
     const [DragStartPos, setDragStartPos] = useState(0);
     const [IsDragged, setIsDragged] = useState(false);
@@ -164,6 +165,7 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
         setOffset(offset + event.screenY - DragStartPos);
         setIsDragged(false);
         applyTime();
+        taskHandler.change_task(Task);
     }
 
     let styles = [styling.EventWrapper];
@@ -176,8 +178,8 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
             style={{ transform: "translateY(" + offset + "px)", marginBottom: -height, zIndex: IsDragged ? 10 : 0 }}
             onDragStart={onDragStart} onDrag={onDrag} onDragEnd={onDragEnd}
         >
-            <div css={styling.EventHeading}>{task.name}</div>
-            <div css={styling.EventTime}>{ pad(task.date.getHours()) + ":" + pad(task.date.getMinutes()) }</div>
+            <div css={styling.EventHeading}>{Task.name}</div>
+            <div css={styling.EventTime}>{ pad(Task.date.getHours()) + ":" + pad(Task.date.getMinutes()) }</div>
         </div>
     );
 }
