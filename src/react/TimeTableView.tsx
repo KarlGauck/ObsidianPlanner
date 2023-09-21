@@ -30,7 +30,7 @@ export class TimeTableView extends ItemView
 
     protected async onOpen(): Promise<void> 
     {
-        const root = createRoot(this.containerEl.children[1])
+        const root = createRoot(this.containerEl.children[1]);
         await root.render(
             <TimeTable tasks={taskHandler.m_tasklist}/>
         )

@@ -1,6 +1,7 @@
 import { Task } from "src/logic/interfaces"
 import { planner } from "main"
 import { TFile } from "obsidian"
+import { randomBytes } from "crypto"
 
 interface TasklistData {
     filters: number[],
@@ -14,7 +15,7 @@ interface StorageData {
     tasklistData: TasklistData
 }
 
-let GlobalId = 0;
+let GlobalId = randomBytes(42);
 function make_task() {
     let task: Task = {
         completed: false,
@@ -23,19 +24,48 @@ function make_task() {
         duration: 1,
         id: GlobalId,
         name: "no name",
-        priority: 0
+        priority: 0,
+        isEvent: false
     };
     GlobalId++;
     return task;
+}
+
+function validate_tasklist_data(data: TasklistData): TasklistData {
+    if (!data) {
+        return validate_tasklist_data({
+            filters: [],
+            activeSorts: [],
+            sortDirections: [],
+            isFilterMode: false
+        });
+    }
+
+    if (!data.filters.length || data.filters.length != 4) {
+        data.filters = [0, 0, 0, 0];
+    }
+    if (!data.activeSorts) {
+        data.activeSorts = [];
+    }
+    if (!data.sortDirections) {
+        data.sortDirections = [];
+    }
+    if (!data.isFilterMode) {
+        data.isFilterMode = false;
+    }
+
+    return data;
 }
 
 export class TaskHandler {
     m_tasklist: Task[];
     m_tasklistData: TasklistData;
     m_initialized: boolean;
+    m_reloadCallbacks: (() => void)[];
     constructor() {
         this.m_tasklist = [];
         this.m_initialized = false;
+        this.m_reloadCallbacks = [];
     }
     create_task() {
         let newTask: Task = make_task();
@@ -62,12 +92,16 @@ export class TaskHandler {
         this.m_tasklist = Array.from(
             this.m_tasklist
         );
+        this.m_reloadCallbacks.forEach((callback) => { callback(); });
 
         this.save_data();
     }
+    add_reload_callback(callback: () => void) {
+        this.m_reloadCallbacks.push(callback);
+    }
 
     async initialize() {
-        this.load_data();
+        await this.load_data();
     }
     async load_data() {
         const folder = planner.vault.getAbstractFileByPath("obsidianPlanner");
@@ -84,9 +118,16 @@ export class TaskHandler {
             return;
         const text = await planner.vault.read(file);
         let data = JSON.parse(text);
-        this.m_tasklist = data['tasklist'];
-        this.m_tasklistData = data['tasklistdata'];
-        console.log(data);
+        if ('tasklist' in data) {
+            this.m_tasklist = data['tasklist'];
+            for (let i = 0; i < this.m_tasklist.length; i++) {
+                this.m_tasklist[i].date = new Date(this.m_tasklist[i].date); 
+            }
+        } else {
+            this.m_tasklist = [];
+        }
+        this.m_tasklistData = validate_tasklist_data(data['tasklistdata']);
+        //console.log(this.m_tasklistData);
 
         this.m_initialized = true;
     }

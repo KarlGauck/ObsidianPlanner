@@ -23,9 +23,16 @@ export default function TaskList({onChange, tasklist}: {onChange: (tasks: Array<
 {
     const isReRender = React.useRef(false)
 
+    const [taskHandlerReloadDummy, taskHandlerReload] = React.useState(0);
+    const taskHandlerReloadCallback = () => {
+        taskHandlerReload(taskHandlerReloadDummy + 1);
+    };
+    taskHandler.add_reload_callback(taskHandlerReloadCallback);
+
     const filterTags = ["done", "passed", "today", "this week"]
     const sortingTags = ["date", "priority", "custom"]
-    console.log("Is initialized: xd" + taskHandler.m_initialized)
+    //console.log("Is initialized: xd" + taskHandler.m_initialized)
+    //console.log(taskHandler);
 
     //const [tasks, setTasks] = React.useState<Array<Task>>([])
     const [customOrder, setCustomOrder] = React.useState(Array<number>())
@@ -46,7 +53,7 @@ export default function TaskList({onChange, tasklist}: {onChange: (tasks: Array<
 
     function getSortedTasks()
     {
-        return tasklist.map((task, index) => [task, index]).sort((i1, i2) => {
+        return taskHandler.m_tasklist.map((task, index) => [task, index]).sort((i1, i2) => {
             const t1 = i1[0] as Task
             const t2 = i2[0] as Task
             const ind1 = i1[1] as number
@@ -123,7 +130,7 @@ export default function TaskList({onChange, tasklist}: {onChange: (tasks: Array<
     function getTaskJSX(index: number, task: Task)
     {
         return (
-            <Draggable id={index} task={task}>
+            <Draggable id={index} task={task} key={index}>
                 <ChangeableTask key={index} id={index} task={task} 
                 onChange={(task) => {
                     // const newTasks = tasks.slice()
@@ -158,8 +165,8 @@ export default function TaskList({onChange, tasklist}: {onChange: (tasks: Array<
             }
             else {
                 const data = await taskHandler.get_task_list_data()
-                console.log("INITIAL RENDER")
-                console.log(data)
+                //console.log("INITIAL RENDER")
+                //console.log(data)
                 setFilter(data.filters)
                 setSorts(data.activeSorts)
                 setSortDirection(data.sortDirections)
@@ -205,7 +212,8 @@ export default function TaskList({onChange, tasklist}: {onChange: (tasks: Array<
         completed: false,
         priority: 3,
         duration: 1,
-        id: 0
+        id: 0,
+        isEvent: false
     }
     
     return <div className="grid content-between h-full gap-5">
@@ -339,11 +347,11 @@ function SortSelection({tags, active, sortDirection, onActiveChange, onDirection
     }
 
     const activeFilterJSX = active.map((num) => getElement(tags[num], num, true))
-    console.log(active)
+    //console.log(active)
     const unactiveFilterJSX = tags.map((tag, index) => [tag, index])
         .filter((array, index) => !(active.includes(index)))
         .map((array) => {
-            console.log(array)
+            //console.log(array)
             return getElement(array[0] as string, array[1] as number, false)
         })
     

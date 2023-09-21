@@ -5,5 +5,6 @@ export interface Task {
     completed: boolean,
     priority: number,
     duration: number, // duration in minutes
-    id: number
+    id: number,
+    isEvent: boolean
 }

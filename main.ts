@@ -12,6 +12,8 @@ export default class ObsidianPlanner extends Plugin
 {
 	async onload() 
 	{
+		console.log("START OF ALL MISCHIEF");
+
 		planner = this.app
 
 		taskHandler = new TaskHandler();

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react"
 
 import { Task } from "../logic/interfaces"
 import { styling } from "./TimeTableStyle"
+import { taskHandler } from "main";
 //import { getTaskListData, loadData, taskListData } from "src/logic/storage";
 
 const DeltaTimeStamp = 30;
@@ -13,12 +14,18 @@ const TimeSectionDelta = TotalHeight / (EndHour + DeltaTimeStamp / 60 + 0.5);
 const TimeSectionStart = 0.25 * TimeSectionDelta;
 
 export function TimeTable({tasks}:{tasks: Task[]}) {
-    console.log("rendering timetable");
-    const now = new Date("Wed Sep 13 2023 21:15:57 GMT+0200 (Central European Summer Time)");
+    //console.log("rendering timetable");
+    const now = new Date("Wed Sep 21 2023 21:15:57 GMT+0200 (Central European Summer Time)");
+
+    const [taskHandlerReloadDummy, taskHandlerReload] = useState(0);
+    const taskHandlerReloadCallback = () => {
+        taskHandlerReload(taskHandlerReloadDummy + 1);
+    };
+    taskHandler.add_reload_callback(taskHandlerReloadCallback);
     
     return (
         <>
-            <Calendar tasks={tasks} startDay={now} now={now} dayNum={5} timeDiff={60}/>
+            <Calendar tasks={taskHandler.m_tasklist} startDay={now} now={now} dayNum={5} timeDiff={60}/>
         </>
     );
 }
@@ -99,8 +106,6 @@ function Week({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay:
     );
 }
 
-const testToday = "Wed Sep 20 2023 21:15:57 GMT+0200 (Central European Summer Time)";
-
 const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function Day({data, index}:{data:Day, index:number}) {
     return (
@@ -143,15 +148,22 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
     const onDragStart = (event: Event) => {
         setDragStartPos(event.screenY);
         setIsDragged(true);
+
+        var crt = document.createElement("div");
+        crt.style.display = "none";
+        document.body.appendChild(crt);
+        event.dataTransfer.setDragImage(crt, 0, 0);
     }
     const onDrag = (event: Event) => {
         setOffset(offset + event.screenY - DragStartPos);
         setDragStartPos(event.screenY);
+        applyTime();
     }
     const onDragEnd = (event: Event) => {
         setOffset(offset + event.screenY - DragStartPos);
         setIsDragged(false);
-        console.log(task.id);
+        applyTime();
+        taskHandler.change_task(Task);
     }
 
     let styles = [styling.EventWrapper];
@@ -161,7 +173,7 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
     return (
         <div draggable="true"
             id={id} css={styles}
-            style={{ transform: "translateY(" + offset + "px)", marginBottom: -height, zIndex: IsDragged ? 10 : 0}}
+            style={{ transform: "translateY(" + offset + "px)", marginBottom: -height, zIndex: IsDragged ? 10 : 0 }}
             onDragStart={onDragStart} onDrag={onDrag} onDragEnd={onDragEnd}
         >
             <div css={styling.EventHeading}>{Task.name}</div>
