@@ -1,7 +1,6 @@
 import { Task } from "src/logic/interfaces"
 import { planner } from "main"
 import { TFile } from "obsidian"
-import { randomBytes } from "crypto"
 
 interface TasklistData {
     filters: number[],
@@ -15,19 +14,21 @@ interface StorageData {
     tasklistData: TasklistData
 }
 
-let GlobalId = randomBytes(42);
+function random_int() {
+    return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  }
+
 function make_task() {
     let task: Task = {
         completed: false,
         date: new Date(),
         description: "",
         duration: 1,
-        id: GlobalId,
+        id: random_int(),
         name: "no name",
         priority: 0,
         isEvent: false
     };
-    GlobalId++;
     return task;
 }
 
@@ -84,16 +85,11 @@ export class TaskHandler {
                 this.m_tasklist[i] = task;
             }
         }
-
         this.react_apply_change();
     }
 
     react_apply_change() {
-        this.m_tasklist = Array.from(
-            this.m_tasklist
-        );
         this.m_reloadCallbacks.forEach((callback) => { callback(); });
-
         this.save_data();
     }
     add_reload_callback(callback: () => void) {

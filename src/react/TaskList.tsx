@@ -421,6 +421,7 @@ function TaskForm({initialTask, onSubmit, darkBackground} : {initialTask: Task, 
 
     let timeString = new Date(task.date).toLocaleTimeString()
     timeString = timeString.slice(0, timeString.lastIndexOf(":"))
+    timeString = timeString.padStart(5, "0");
 
     const date = new Date(task.date);
     const day = date.getDate().toString();
