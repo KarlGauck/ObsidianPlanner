@@ -2,10 +2,11 @@ import * as React from "react"
 import { Task } from "src/logic/interfaces"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import * as Icons from "@fortawesome/free-solid-svg-icons"
-import * as Storage from "src/logic/storage"
+// import * as Storage from "src/logic/storage"
 import { DndContext, DragOverlay, useDndMonitor, useDraggable, useDroppable } from "@dnd-kit/core"
 import { Notice } from "obsidian"
 import { Draggable } from "src/react/Draggable"
+import { taskHandler } from "main"
 
 export const ItemTypes = {
     KNIGHT: 'knights'
@@ -18,15 +19,15 @@ function getWeekOfDate(date: Date)
     return Math.ceil(days / 7);
 }
 
-export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>, onChange: (tasks: Array<Task>) => void})
+export default function TaskList({onChange, tasklist}: {onChange: (tasks: Array<Task>) => void, tasklist: Task[]})
 {
     const isReRender = React.useRef(false)
 
     const filterTags = ["done", "passed", "today", "this week"]
     const sortingTags = ["date", "priority", "custom"]
-    console.log("Is initialized: xd" + Storage.initialized)
+    console.log("Is initialized: xd" + taskHandler.m_initialized)
 
-    const [tasks, setTasks] = React.useState<Array<Task>>([])
+    //const [tasks, setTasks] = React.useState<Array<Task>>([])
     const [customOrder, setCustomOrder] = React.useState(Array<number>())
     const [filter, setFilter] = React.useState(Array(filterTags.length).fill(0))
     const [sorts, setSorts] = React.useState<Array<number>>([])
@@ -45,7 +46,7 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function getSortedTasks()
     {
-        return tasks.map((task, index) => [task, index]).sort((i1, i2) => {
+        return tasklist.map((task, index) => [task, index]).sort((i1, i2) => {
             const t1 = i1[0] as Task
             const t2 = i2[0] as Task
             const ind1 = i1[1] as number
@@ -103,9 +104,9 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
                         filterValue = date.getFullYear() == now.getFullYear() && date.getDate() == now.getDate()
                         break
                     case 3:
-                        console.log("test: " + filter[i])
+                        //console.log("test: " + filter[i])
                         filterValue = date.getFullYear() == now.getFullYear() && getWeekOfDate(date) == getWeekOfDate(now)
-                        console.log(filterValue)
+                        //console.log(filterValue)
                         break
                 }
 
@@ -121,20 +122,26 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function getTaskJSX(index: number, task: Task)
     {
-        return <Draggable id={index} task={task}>
-            <ChangableTask key={index} id={index} task={task} 
-            onChange={(task) => {
-                const newTasks = tasks.slice()
-                newTasks[index] = task
-                setTasks(newTasks)
-            }}
-            onDelete={() => {
-                const newTasks = tasks.slice()
-                newTasks.remove(newTasks[index])
-                setTasks(newTasks)
-            }}     
-        />
-        </Draggable>
+        return (
+            <Draggable id={index} task={task}>
+                <ChangeableTask key={index} id={index} task={task} 
+                onChange={(task) => {
+                    // const newTasks = tasks.slice()
+                    // newTasks[index] = task
+                    // setTasks(newTasks)
+
+                    taskHandler.change_task(task);
+                }}
+                onDelete={() => {
+                    // const newTasks = tasks.slice()
+                    // newTasks.remove(newTasks[index])
+                    // setTasks(newTasks)
+
+                    taskHandler.delete_task(task);
+                }}     
+            />
+            </Draggable>
+        );
     }
 
     React.useEffect(() => {
@@ -142,8 +149,7 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
         {
             if (isReRender.current) 
             {
-                Storage.setTaskListData ({
-                    tasks: tasks,
+                taskHandler.set_task_list_data ({
                     filters: filter,
                     activeSorts: sorts,
                     sortDirections: sortDirection,
@@ -151,20 +157,19 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
                 })
             }
             else {
-                const data = await Storage.getTaskListData()
+                const data = await taskHandler.get_task_list_data()
                 console.log("INITIAL RENDER")
                 console.log(data)
-                setTasks(data.tasks)
                 setFilter(data.filters)
                 setSorts(data.activeSorts)
                 setSortDirection(data.sortDirections)
                 setIsFilterMode(data.isFilterMode)
-                setCustomOrder(Array.from(Array(data.tasks.length).keys()))
+                setCustomOrder(Array.from(Array(tasklist.length).keys()))
                 isReRender.current = true    
             }
         }
         getData()
-    }, [tasks, filter, sorts, sortDirection, isFilterMode])
+    }, [tasklist, filter, sorts, sortDirection, isFilterMode])
 
     const taskJSX = getFilteredTasks().map((array) => {
         const index = array[1] as number
@@ -189,17 +194,18 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function submitTask(task: Task)
     {
-        const newTasks = tasks.slice()
-        newTasks.push(task)
-        setTasks(newTasks)
+        task.id = taskHandler.create_task().id;
+        taskHandler.change_task(task);
     }
 
-    const emptyTaskForm = {
+    const emptyTaskForm: Task = {
         name: "",
         description: "",
         date: new Date(),
         completed: false,
-        priority: 3
+        priority: 3,
+        duration: 1,
+        id: 0
     }
     
     return <div className="grid content-between h-full gap-5">
@@ -446,7 +452,7 @@ function TaskForm({initialTask, onSubmit, darkBackground} : {initialTask: Task, 
     </div>
 }
 
-function ChangableTask({task, id, onChange, onDelete}: {task: Task, id: number, onChange: (task: Task) => void, onDelete: () => void})
+function ChangeableTask({task, id, onChange, onDelete}: {task: Task, id: number, onChange: (task: Task) => void, onDelete: () => void})
 {
     const [isEditMode, setIsEditMode] = React.useState(false)
 

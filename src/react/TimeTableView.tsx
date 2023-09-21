@@ -3,6 +3,7 @@ import * as React from "react"
 import { createRoot } from "react-dom/client"
 
 import { TimeTable } from "./TimeTableReact"
+import { taskHandler } from "main"
 
 export const VIEW_TYPE_TIMETABLE = "timetable_view"
 
@@ -31,7 +32,7 @@ export class TimeTableView extends ItemView
     {
         const root = createRoot(this.containerEl.children[1])
         await root.render(
-            <TimeTable/>
+            <TimeTable tasks={taskHandler.m_tasklist}/>
         )
     }
 }

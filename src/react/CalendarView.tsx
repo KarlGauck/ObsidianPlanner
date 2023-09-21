@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client"
 import { AppContext } from "../../context"
 import { Task } from "src/logic/interfaces"
 import { DndContext } from "@dnd-kit/core"
+import { taskHandler } from "main"
 
 export const VIEW_TYPE_CALENDAR = "calendar_view"
 
@@ -56,8 +57,8 @@ export class CalendarView extends ItemView
         await root.render(
             <AppContext.Provider value={this.app}>
                 <DndContext>
-                    <TaskList propTasks={tasks} onChange={this.tasksChanged}/>
-                </DndContext>
+                    <TaskList onChange={this.tasksChanged} tasklist={taskHandler.m_tasklist}/>
+                </DndContext>   
             </AppContext.Provider>
         )     
     }

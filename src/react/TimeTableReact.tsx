@@ -3,8 +3,7 @@ import { useState, useRef, useEffect } from "react"
 
 import { Task } from "../logic/interfaces"
 import { styling } from "./TimeTableStyle"
-import { max } from "moment";
-import { getTaskListData, loadData, taskListData } from "src/logic/storage";
+//import { getTaskListData, loadData, taskListData } from "src/logic/storage";
 
 const DeltaTimeStamp = 30;
 const TotalHeight = 3000;
@@ -13,18 +12,13 @@ const EndHour = 23;
 const TimeSectionDelta = TotalHeight / (EndHour + DeltaTimeStamp / 60 + 0.5);
 const TimeSectionStart = 0.25 * TimeSectionDelta;
 
-async function loadTasks()
-
 export function TimeTable({tasks}:{tasks: Task[]}) {
+    console.log("rendering timetable");
     const now = new Date("Wed Sep 13 2023 21:15:57 GMT+0200 (Central European Summer Time)");
-    const [Tasks, setTasks] = useState([]);
-    (async () => {
-        let t = await getTaskListData();
-        setTasks(t.tasks);
-    })
+    
     return (
         <>
-            <Calendar tasks={Tasks} startDay={now} now={now} dayNum={5} timeDiff={60}/>
+            <Calendar tasks={tasks} startDay={now} now={now} dayNum={5} timeDiff={60}/>
         </>
     );
 }

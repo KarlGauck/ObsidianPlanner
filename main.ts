@@ -2,7 +2,7 @@ import { App, Editor, Menu, MarkdownView, Modal, Notice, Plugin, PluginSettingTa
 import { CalendarView, VIEW_TYPE_CALENDAR } from "./src/react/CalendarView"
 import { TimeTableView, VIEW_TYPE_TIMETABLE } from "./src/react/TimeTableView"
 import { Task } from "src/logic/interfaces"
-import { loadData } from 'src/logic/storage';
+//import { loadData } from 'src/logic/storage';
 import { TaskHandler } from 'src/logic/TaskHandler';
 
 export let planner: App
@@ -13,6 +13,9 @@ export default class ObsidianPlanner extends Plugin
 	async onload() 
 	{
 		planner = this.app
+
+		taskHandler = new TaskHandler();
+		await taskHandler.initialize();
 
 		this.registerView(
 			VIEW_TYPE_CALENDAR,
@@ -26,8 +29,6 @@ export default class ObsidianPlanner extends Plugin
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
 			this.activateView()
 		});
-
-		await taskHandler.initialize();
 	}
 
 	onunload() 

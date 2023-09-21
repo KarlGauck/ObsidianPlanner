@@ -14,6 +14,21 @@ interface StorageData {
     tasklistData: TasklistData
 }
 
+let GlobalId = 0;
+function make_task() {
+    let task: Task = {
+        completed: false,
+        date: new Date(),
+        description: "",
+        duration: 1,
+        id: GlobalId,
+        name: "no name",
+        priority: 0
+    };
+    GlobalId++;
+    return task;
+}
+
 export class TaskHandler {
     m_tasklist: Task[];
     m_tasklistData: TasklistData;
@@ -23,10 +38,32 @@ export class TaskHandler {
         this.m_initialized = false;
     }
     create_task() {
-
+        let newTask: Task = make_task();
+        this.m_tasklist = Array.from(this.m_tasklist);
+        this.m_tasklist.push(newTask);
+        this.react_apply_change();
+        return newTask;
     }
     delete_task(task: Task) {
+        this.m_tasklist.remove(task);
+        this.react_apply_change();
+    }
+    change_task(task: Task) {
+        for (let i = 0; i < this.m_tasklist.length; i++) {
+            if (this.m_tasklist[i].id == task.id) {
+                this.m_tasklist[i] = task;
+            }
+        }
 
+        this.react_apply_change();
+    }
+
+    react_apply_change() {
+        this.m_tasklist = Array.from(
+            this.m_tasklist
+        );
+
+        this.save_data();
     }
 
     async initialize() {
@@ -49,10 +86,11 @@ export class TaskHandler {
         let data = JSON.parse(text);
         this.m_tasklist = data['tasklist'];
         this.m_tasklistData = data['tasklistdata'];
+        console.log(data);
 
         this.m_initialized = true;
     }
-    saveData() {
+    save_data() {
         const file = planner.vault.getAbstractFileByPath("obsidianPlanner/data.md");
         if (file != undefined && file instanceof TFile) {
             let data: StorageData = {
@@ -63,5 +101,17 @@ export class TaskHandler {
         }
         
         this.m_initialized = true;
+    }
+
+    set_task_list_data(tasklistData: TasklistData) {
+        this.m_tasklistData = tasklistData;
+        this.save_data();
+    }
+
+    async get_task_list_data() {
+        if (!this.m_initialized) {
+            await this.load_data();
+        }
+        return this.m_tasklistData;
     }
 }
