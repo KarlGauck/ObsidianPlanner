@@ -87,10 +87,10 @@ function Week({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay:
         if (el) {
             setViewportWidth(el.clientWidth);
         }
-        queryResize();
     };
-    const queryResize = () => { setTimeout(() => { resize() }, 100) };
-    new Promise(() => { queryResize() });
+    useEffect(() => {
+        resize();
+    }, []);
     const dayWidth = viewportWidth / dayNum;
 
     let dayDate = clone_date(startDay);
