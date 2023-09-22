@@ -19,12 +19,16 @@ export const styling = {
         marginRight: "-3px"
     }),
     DayName: css({
+        fontSize: "small",
         position: "absolute",
         bottom: 3,
         background: "InactiveBorder",
         padding: "1px 7px",
         marginBottom: "4px",
         borderRadius: "5px"
+    }),
+    DayNameToday: css({
+        background: "orange"
     }),
     TimeStampWrapper: css({
         display: "flex",

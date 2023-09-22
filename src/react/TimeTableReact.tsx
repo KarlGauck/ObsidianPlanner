@@ -13,28 +13,46 @@ const EndHour = 23;
 const TimeSectionDelta = TotalHeight / (EndHour + DeltaTimeStamp / 60 + 0.5);
 const TimeSectionStart = 0.25 * TimeSectionDelta;
 
-export function TimeTable({tasks}:{tasks: Task[]}) {
-    //console.log("rendering timetable");
-    const now = new Date("Wed Sep 21 2023 21:15:57 GMT+0200 (Central European Summer Time)");
+function add_day(date: Date, days: number) {
+    date.setDate(date.getDate() + days);
+    return date;
+}
 
+export function TimeTable({tasks}:{tasks: Task[]}) {
+    const [start, setStart] = useState(new Date());
+    const now = new Date();
     const [taskHandlerReloadDummy, taskHandlerReload] = useState(0);
     const taskHandlerReloadCallback = () => {
         taskHandlerReload(taskHandlerReloadDummy + 1);
     };
     taskHandler.add_reload_callback(taskHandlerReloadCallback);
     
+    const scrollCallback = (event: any) => {
+        if (event.deltaY > 0 && event.shiftKey) {
+            setStart(clone_date(add_day(start, 1)));
+        }
+        if (event.deltaY < 0 && event.shiftKey) {
+            setStart(clone_date(add_day(start, -1)));
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener("scroll", scrollCallback);
+        return () => window.removeEventListener("scroll", scrollCallback);
+    }, []);
+
     return (
         <>
-            <Calendar tasks={taskHandler.m_tasklist} startDay={now} now={now} dayNum={5} timeDiff={60}/>
+            <Calendar tasks={taskHandler.m_tasklist} startDay={start} now={now} dayNum={5} timeDiff={60} scroll={scrollCallback}/>
         </>
     );
 }
 
-function Calendar({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number}) {
+function Calendar({tasks, startDay, now, dayNum, timeDiff, scroll}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, scroll: (event: any)=>void}) {
     return (
-        <div css={styling.CalendarWrapper} style={{ height: TotalHeight }} id="CALENDAR">
+        <div css={styling.CalendarWrapper} style={{ height: TotalHeight }} id="CALENDAR" onWheel={scroll}>
             <TimeStamps/>
-            <Week tasks={tasks} startDay={now} now={now} dayNum={5} timeDiff={60}/>
+            <Week tasks={tasks} startDay={startDay} now={now} dayNum={5} timeDiff={60}/>
         </div>
     );
 }
@@ -97,7 +115,7 @@ function Week({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay:
             dayWidth: dayWidth
         }
         days[i] = clone_day(day);
-        dayDate.setDate(dayDate.getDate() + 1);
+        dayDate = add_day(dayDate, 1);
     }
     return (
         <div css={styling.WeekWrapper}>
@@ -108,13 +126,17 @@ function Week({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay:
 
 const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function Day({data, index}:{data:Day, index:number}) {
+    let timestampStyle = [styling.DayName];
+    if (data.isToday) timestampStyle.push(styling.DayNameToday);
+
+    console.log(data.date.toLocaleDateString(), data.tasks);
     return (
         <>
             <div css={styling.DayWrapper} style={{ width: data.dayWidth + "px", maxHeight: "100%" }}>
-                { data.tasks.map((task, i) => { return <BetterEvent key={i} index={index + "_" + i} task={task}/> }) }
+                { data.tasks.map((task, i) => { return <BetterEvent key={data.date.getTime() + i} index={index + "_" + i} task={task}/> }) }
             </div>
-            <div css={styling.DayName} style={{ left: "calc(" + (data.dayWidth - 3) * index + "px + 34px)" }}>
-                { weekday[data.date.getDay()] }
+            <div css={timestampStyle} style={{ left: "calc(" + (data.dayWidth - 3) * index + "px + 34px)" }}>
+                { weekday[data.date.getDay()].slice(0, 3) + " " + data.date.toLocaleDateString() }
             </div>
         </>
     );
@@ -134,7 +156,6 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
     }
 
     const [Task, setTask] = useState(task);
-    console.log(Task.date);
     const [offset, setOffset] = useState(getOffset(task.date));
 
     const applyTime = () => {
@@ -147,7 +168,7 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
     }
     const [DragStartPos, setDragStartPos] = useState(0);
     const [IsDragged, setIsDragged] = useState(false);
-    const onDragStart = (event: Event) => {
+    const onDragStart = (event: any) => {
         setDragStartPos(event.screenY);
         setIsDragged(true);
 
@@ -156,12 +177,12 @@ function BetterEvent({task, index}:{task:Task, index:string}) {
         document.body.appendChild(crt);
         event.dataTransfer.setDragImage(crt, 0, 0);
     }
-    const onDrag = (event: Event) => {
+    const onDrag = (event: any) => {
         setOffset(offset + event.screenY - DragStartPos);
         setDragStartPos(event.screenY);
         applyTime();
     }
-    const onDragEnd = (event: Event) => {
+    const onDragEnd = (event: any) => {
         setOffset(offset + event.screenY - DragStartPos);
         setIsDragged(false);
         applyTime();
