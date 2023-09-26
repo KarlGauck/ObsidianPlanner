@@ -2,10 +2,10 @@ import * as React from "react"
 import { Task } from "src/logic/interfaces"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import * as Icons from "@fortawesome/free-solid-svg-icons"
-import * as Storage from "src/logic/storage"
 import { DragOverlay, useDndMonitor, useDroppable } from "@dnd-kit/core"
 import { Draggable } from "src/react/Draggable"
 import { createPortal } from "react-dom"
+import { taskHandler } from "main"
 
 
 export const ItemTypes = {
@@ -21,7 +21,7 @@ function getWeekOfDate(date: Date)
 }
 
 
-export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>, onChange: (tasks: Array<Task>) => void})
+export default function TaskList({propTasks, onChange, tasklist}: {propTasks: Array<Task>, onChange: (tasks: Array<Task>) => void, tasklist: Task[]})
 {
     const isReRender = React.useRef(false)
 
@@ -40,6 +40,12 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     const [isSearchMode, setIsSearchMode] = React.useState(false)
     const [searchQuery, setSearchQuery] = React.useState("")
+
+    const [taskHandlerReloadDummy, taskHandlerReload] = React.useState(0);
+    const taskHandlerReloadCallback = () => {
+        taskHandlerReload(taskHandlerReloadDummy + 1);
+    };
+    taskHandler.add_reload_callback(taskHandlerReloadCallback);
 
     function setTaskPosition(dragIndex: number, targetIndex: number) {
         let newArray = getSortedTasks().map((array) => array[1] as number) 
@@ -61,7 +67,7 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function getSortedTasks()
     {
-        return tasks.map((task, index) => [task, index]).sort((i1, i2) => {
+        return taskHandler.m_tasklist.map((task, index) => [task, index]).sort((i1, i2) => {
             const t1 = i1[0] as Task
             const t2 = i2[0] as Task
             const ind1 = i1[1] as number
@@ -149,14 +155,16 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
         return <Draggable key={index} id={index.toString()} task={task}>
             <ChangableTask id={index} task={task} 
                 onChange={(task) => {
-                    const newTasks = tasks.slice()
-                    newTasks[index] = task
-                    setTasks(newTasks)
+                    // const newTasks = tasks.slice()
+                    // newTasks[index] = task
+                    // setTasks(newTasks)
+                    taskHandler.change_task(task);
                 }}
                 onDelete={() => {
-                    const newTasks = tasks.slice()
-                    newTasks.remove(newTasks[index])
-                    setTasks(newTasks)
+                    // const newTasks = tasks.slice()
+                    // newTasks.remove(newTasks[index])
+                    // setTasks(newTasks)
+                    taskHandler.delete_task(task);
                 }}     
             />
         </Draggable>    
@@ -167,8 +175,7 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
         {
             if (isReRender.current) 
             {
-                Storage.setTaskListData ({
-                    tasks: tasks,
+                taskHandler.set_task_list_data ({
                     filters: filter,
                     activeSorts: sorts,
                     sortDirections: sortDirection,
@@ -176,13 +183,12 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
                 })
             }
             else {
-                const data = await Storage.getTaskListData()
-                setTasks(data.tasks)
+                const data = await taskHandler.get_task_list_data();
                 setFilter(data.filters)
                 setSorts(data.activeSorts)
                 setSortDirection(data.sortDirections)
                 setIsFilterMode(data.isFilterMode)
-                setCustomOrder(Array.from(Array(data.tasks.length).keys()))
+                setCustomOrder(Array.from(Array(tasklist.length).keys()))
                 isReRender.current = true    
             }
         }
@@ -212,9 +218,8 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function submitTask(task: Task)
     {
-        const newTasks = tasks.slice()
-        newTasks.push(task)
-        setTasks(newTasks)
+        task.id = taskHandler.create_task().id;
+        taskHandler.change_task(task);
     }
 
     const emptyTaskForm: Task = {

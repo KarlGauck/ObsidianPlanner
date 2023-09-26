@@ -4,7 +4,6 @@ import { TimeTableView, VIEW_TYPE_TIMETABLE } from "./src/react/TimeTableView"
 import { TaskHandler } from 'src/logic/TaskHandler';
 
 import { Task } from "src/logic/interfaces"
-import { loadData } from 'src/logic/storage';
 
 export let planner: App
 export let taskHandler: TaskHandler;

@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client"
 import { AppContext } from "../../context"
 import { Task } from "src/logic/interfaces"
 import { DndContext, MouseSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { taskHandler } from "main"
 
 export const VIEW_TYPE_CALENDAR = "calendar_view"
 
@@ -66,6 +67,6 @@ function Base({tasks} : {tasks: Task[]}) {
     const sensors = useSensors(mouseSensor)
 
     return <DndContext sensors={sensors}>
-        <TaskList propTasks={tasks} onChange={this.tasksChanged}/>
+        <TaskList propTasks={tasks} onChange={this.tasksChanged} tasklist={taskHandler.m_tasklist}/>
     </DndContext>
 }
