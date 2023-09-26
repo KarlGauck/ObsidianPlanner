@@ -181,10 +181,11 @@ function clone_day(v: Day) {
 function clone_date(v: Date) {
     return new Date(clone(v));
 }
+const NullDate = new Date("Mon Sep 25 3000 08:58:33 GMT+0200");
 function Week({tasks, startDay, now, dayNum, timeDiff, calendarSizing}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, calendarSizing: CalendarSizing}) {
     // style specific things
     const [viewportWidth, setViewportWidth] = useState(0);
-    const [newDay, setNewDay] = useState(new Date());
+    const [newDay, setNewDay] = useState(NullDate);
     const resize = () => {
         let el = document.getElementById("CALENDAR");
         if (el) {
@@ -246,7 +247,6 @@ function Day({data, index, calendarSizing, setNewDay, newDay}:{data:Day, index:n
     );
 }
 
-const NullDate = new Date("Mon Sep 25 3000 08:58:33 GMT+0200");
 function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:string, calendarSizing: CalendarSizing, setNewDay: (date: Date)=>void}) {
     const [height, setHeight] = useState(0);
     const id = "EVENT_CARD_" + index;

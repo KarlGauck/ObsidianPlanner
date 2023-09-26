@@ -49,14 +49,16 @@ export const styling = {
         padding: "2px 5px",
         borderRadius: "12px",
         margin: "0 7px",
-        position: "sticky"
+        position: "sticky",
+        cursor: "pointer"
     }),
     EventWrapperDragged: css({
         backgroundColor: "darkorange",
         padding: "2px 5px",
         borderRadius: "12px",
         margin: "0 7px",
-        position: "sticky"
+        position: "sticky",
+        cursor: "grabbing"
     }),
     EventHeading: css({
         padding: 3,
