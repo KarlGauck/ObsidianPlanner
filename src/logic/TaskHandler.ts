@@ -123,7 +123,6 @@ export class TaskHandler {
             this.m_tasklist = [];
         }
         this.m_tasklistData = validate_tasklist_data(data['tasklistdata']);
-        //console.log(this.m_tasklistData);
 
         this.m_initialized = true;
     }

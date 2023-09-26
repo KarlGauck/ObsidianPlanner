@@ -155,15 +155,9 @@ export default function TaskList({propTasks, onChange, tasklist}: {propTasks: Ar
         return <Draggable key={index} id={index.toString()} task={task}>
             <ChangableTask id={index} task={task} 
                 onChange={(task) => {
-                    // const newTasks = tasks.slice()
-                    // newTasks[index] = task
-                    // setTasks(newTasks)
                     taskHandler.change_task(task);
                 }}
                 onDelete={() => {
-                    // const newTasks = tasks.slice()
-                    // newTasks.remove(newTasks[index])
-                    // setTasks(newTasks)
                     taskHandler.delete_task(task);
                 }}     
             />
@@ -478,6 +472,7 @@ function TaskForm({initialTask, onSubmit, darkBackground} : {initialTask: Task, 
 
     let timeString = new Date(task.date).toLocaleTimeString()
     timeString = timeString.slice(0, timeString.lastIndexOf(":"))
+    timeString = timeString.padStart(5, "0");
 
     const date = new Date(task.date)
     const day = date.getDate().toString();
