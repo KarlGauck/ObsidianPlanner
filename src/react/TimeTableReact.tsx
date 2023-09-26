@@ -51,7 +51,7 @@ function equal(a: CalendarSizing, b: CalendarSizing): boolean {
 }
 
 const fs = require('fs');
-const ConfigFileName = './timetable_config.json';
+const ConfigFileName = 'timetable_config.json';
 function write_config_file(calendarSizing: CalendarSizing, callback: () => void) {
     fs.writeFile(ConfigFileName, JSON.stringify(calendarSizing), (err: any) => { if (err) throw err; callback(); });
 }
@@ -259,9 +259,8 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
 
     const [Task, setTask] = useState(task);
     const [offset, setOffset] = useState(getOffset(task.date));
-    //let offset = getOffset(task.date);
-    //if (offfset != offfset) setOffset(offfset);
-    //const setOffset = (o: number) => { offset = o; };
+    if (offset != getOffset(task.date)) {
+        setOffset(getOffset(task.date));
 
     const applyTime = () => {
         let newTask: Task = clone(Task);
