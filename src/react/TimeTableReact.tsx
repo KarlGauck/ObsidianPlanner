@@ -246,6 +246,7 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
 
         eventReloadStack.push(() => {
             forceUpdate();
+            setOffset(getOffset(task.date));
         });
     });
 
@@ -257,10 +258,10 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
     }
 
     const [Task, setTask] = useState(task);
-    //const [offset, setOffset] = useState(getOffset(task.date));
-    let offset = getOffset(task.date);
+    const [offset, setOffset] = useState(getOffset(task.date));
+    //let offset = getOffset(task.date);
     //if (offfset != offfset) setOffset(offfset);
-    const setOffset = (o: number) => { offset = o; };
+    //const setOffset = (o: number) => { offset = o; };
 
     const applyTime = () => {
         let newTask: Task = clone(Task);
