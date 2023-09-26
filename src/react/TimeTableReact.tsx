@@ -267,9 +267,10 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
         return timeSectionStart + timeSectionDelta * time_to_dec(date.getHours(), date.getMinutes());
     }
 
+    const [IsDragged, setIsDragged] = useState(false);
     const [Task, setTask] = useState(task);
     const [offset, setOffset] = useState(getOffset(task.date));
-    if (offset != getOffset(task.date)) {
+    if (offset != getOffset(task.date) && !IsDragged) {
         setOffset(getOffset(task.date));
     }
 
@@ -282,7 +283,6 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
         setTask(newTask);
     }
     const [DragStartPos, setDragStartPos] = useState(0);
-    const [IsDragged, setIsDragged] = useState(false);
     const onDragStart = (event: any) => {
         setDragStartPos(event.screenY);
         setIsDragged(true);
