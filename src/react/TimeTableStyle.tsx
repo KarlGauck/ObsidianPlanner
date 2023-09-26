@@ -18,6 +18,9 @@ export const styling = {
         borderColor: "InactiveBorder",
         marginRight: "-3px"
     }),
+    NewDayHighlight: css({
+        backgroundColor: "orange"
+    }),
     DayName: css({
         fontSize: "small",
         position: "absolute",
@@ -49,7 +52,7 @@ export const styling = {
         position: "sticky"
     }),
     EventWrapperDragged: css({
-        backgroundColor: "darkblue",
+        backgroundColor: "darkorange",
         padding: "2px 5px",
         borderRadius: "12px",
         margin: "0 7px",

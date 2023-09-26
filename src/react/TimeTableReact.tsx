@@ -184,6 +184,7 @@ function clone_date(v: Date) {
 function Week({tasks, startDay, now, dayNum, timeDiff, calendarSizing}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, calendarSizing: CalendarSizing}) {
     // style specific things
     const [viewportWidth, setViewportWidth] = useState(0);
+    const [newDay, setNewDay] = useState(new Date());
     const resize = () => {
         let el = document.getElementById("CALENDAR");
         if (el) {
@@ -221,19 +222,22 @@ function Week({tasks, startDay, now, dayNum, timeDiff, calendarSizing}:{tasks: T
     }
     return (
         <div css={styling.WeekWrapper}>
-            { days.map((day, index) => { return <Day key={index} index={index} data={day} calendarSizing={calendarSizing}/> }) }
+            { days.map((day, index) => { return <Day key={index} index={index} data={day} calendarSizing={calendarSizing} newDay={newDay} setNewDay={setNewDay}/> }) }
         </div>
     );
 }
 
 const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-function Day({data, index, calendarSizing}:{data:Day, index:number, calendarSizing: CalendarSizing}) {
+function Day({data, index, calendarSizing, setNewDay, newDay}:{data:Day, index:number, calendarSizing: CalendarSizing, setNewDay: (date: Date)=>void, newDay: Date}) {
     let timestampStyle = [styling.DayName];
     if (data.isToday) timestampStyle.push(styling.DayNameToday);
+    let cssStyles = [styling.DayWrapper];
+    if (same_day(data.date, newDay))
+        cssStyles.push(styling.NewDayHighlight);
     return (
         <>
-            <div css={styling.DayWrapper} style={{ width: data.dayWidth + "px", maxHeight: "100%" }}>
-                { data.tasks.map((task, i) => { return <BetterEvent key={data.date.getTime() + i} index={index + "_" + i} task={task} calendarSizing={calendarSizing}/> }) }
+            <div css={cssStyles} style={{ width: data.dayWidth + "px", maxHeight: "100%" }}>
+                { data.tasks.map((task, i) => { return <BetterEvent key={data.date.getTime() + i} index={index + "_" + i} task={task} calendarSizing={calendarSizing} setNewDay={setNewDay}/> }) }
             </div>
             <div css={timestampStyle} style={{ left: "calc(" + (data.dayWidth - 3) * index + "px + 34px)" }}>
                 { weekday[data.date.getDay()].slice(0, 3) + " " + data.date.toLocaleDateString() }
@@ -242,7 +246,8 @@ function Day({data, index, calendarSizing}:{data:Day, index:number, calendarSizi
     );
 }
 
-function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, calendarSizing: CalendarSizing}) {
+const NullDate = new Date("Mon Sep 25 3000 08:58:33 GMT+0200");
+function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:string, calendarSizing: CalendarSizing, setNewDay: (date: Date)=>void}) {
     const [height, setHeight] = useState(0);
     const id = "EVENT_CARD_" + index;
 
@@ -283,8 +288,10 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
         setTask(newTask);
     }
     const [DragStartPos, setDragStartPos] = useState(0);
+    const [DragSideStartPos, setDragSideStartPos] = useState(0);
     const onDragStart = (event: any) => {
         setDragStartPos(event.screenY);
+        setDragSideStartPos(event.screenX);
         setIsDragged(true);
 
         var crt = document.createElement("div");
@@ -293,15 +300,26 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
         event.dataTransfer.setDragImage(crt, 0, 0);
     }
     const onDrag = (event: any) => {
-        setOffset(offset + event.screenY - DragStartPos);
-        setDragStartPos(event.screenY);
-        applyTime();
+        if (Math.abs(event.screenX - DragSideStartPos) > 100) {
+            let delta = event.screenX - DragSideStartPos;
+            let newTask: Task = clone(Task);
+            newTask.date = new Date(newTask.date);
+            newTask.date = add_day(newTask.date, delta > 0 ? 1 : -1);
+            setNewDay(newTask.date);
+            setTask(newTask);
+            setDragSideStartPos(event.screenX);
+        } else {
+            setOffset(offset + event.screenY - DragStartPos);
+            setDragStartPos(event.screenY);
+            applyTime();
+        }
     }
     const onDragEnd = (event: any) => {
         setOffset(offset + event.screenY - DragStartPos);
         setIsDragged(false);
         applyTime();
         taskHandler.change_task(Task);
+        setNewDay(NullDate);
     }
 
     let styles = [styling.EventWrapper];
