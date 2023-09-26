@@ -17,7 +17,7 @@ interface CalendarSizing {
 function default_calendar_sizing(): CalendarSizing {
     return {
         DeltaTimeStamp: 30,
-        TotalHeight: 2500,
+        TotalHeight: 3000,
         StartHour: 5,
         EndHour: 23
     }
@@ -62,9 +62,19 @@ function read_config_file(callback: (c: CalendarSizing) => void) {
             throw err;
             return undefined;
         }
+        if (!data || data.length == 0)
+            return;
         ret = JSON.parse(decode_string(data));
         callback(ret);
     });
+}
+function validate(calendarSizing: CalendarSizing): CalendarSizing {
+    calendarSizing.DeltaTimeStamp = Math.clamp(calendarSizing.DeltaTimeStamp, 15, 60);
+    calendarSizing.StartHour = Math.clamp(calendarSizing.StartHour, 0, 22);
+    calendarSizing.EndHour = Math.clamp(calendarSizing.EndHour, calendarSizing.StartHour - 1, 23);
+    calendarSizing.TotalHeight = Math.clamp(calendarSizing.TotalHeight, 750, 6000);
+
+    return calendarSizing;
 }
 
 let eventReloadStack: (()=>void)[] = [];
@@ -117,12 +127,12 @@ export function TimeTable({tasks}:{tasks: Task[]}) {
                 let cs = calendarSizing;
                 cs.DeltaTimeStamp /= 2;
                 cs.TotalHeight *= 2;
-                setCalendarSizing(clone(cs));
+                setCalendarSizing(clone(validate(cs)));
             } else {
                 let cs = calendarSizing;
                 cs.DeltaTimeStamp *= 2;
                 cs.TotalHeight /= 2;
-                setCalendarSizing(clone(cs));
+                setCalendarSizing(clone(validate(cs)));
             }
             eventReloadStack.forEach((ers) => { ers(); });
         }
@@ -261,6 +271,7 @@ function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, cal
     const [offset, setOffset] = useState(getOffset(task.date));
     if (offset != getOffset(task.date)) {
         setOffset(getOffset(task.date));
+    }
 
     const applyTime = () => {
         let newTask: Task = clone(Task);
@@ -340,7 +351,4 @@ function TimeStamps({calendarSizing}: {calendarSizing: CalendarSizing}) {
             { get_times(calendarSizing).map((time, index) => <div key={index}>{time}</div>) }
         </div>
     );
-}
-function TimeSection() {
-
 }
