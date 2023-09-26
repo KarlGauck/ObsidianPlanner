@@ -10,6 +10,7 @@ function add_day(date: Date, days: number) {
     date.setDate(date.getDate() + days);
     return date;
 }
+const DayNum = 5;
 
 interface CalendarSizing {
     DeltaTimeStamp: number, TotalHeight: number, StartHour: number, EndHour: number
@@ -145,16 +146,16 @@ export function TimeTable({tasks}:{tasks: Task[]}) {
 
     return (
         <>
-            <Calendar calendarSizing={calendarSizing} tasks={taskHandler.m_tasklist} startDay={start} now={now} dayNum={5} timeDiff={60} scroll={scrollCallback}/>
+            <Calendar calendarSizing={calendarSizing} tasks={taskHandler.m_tasklist} startDay={start} now={now} scroll={scrollCallback}/>
         </>
     );
 }
 
-function Calendar({tasks, startDay, now, dayNum, timeDiff, scroll, calendarSizing}:{calendarSizing: CalendarSizing, tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, scroll: (event: any)=>void}) {
+function Calendar({tasks, startDay, now, scroll, calendarSizing}:{calendarSizing: CalendarSizing, tasks: Task[], startDay: Date, now: Date, scroll: (event: any)=>void}) {
     return (
         <div css={styling.CalendarWrapper} style={{ height: calendarSizing.TotalHeight }} id="CALENDAR" onWheel={scroll}>
             <TimeStamps calendarSizing={calendarSizing}/>
-            <Week tasks={tasks} startDay={startDay} now={now} dayNum={5} timeDiff={60} calendarSizing={calendarSizing}/>
+            <Week tasks={tasks} startDay={startDay} now={now} calendarSizing={calendarSizing}/>
         </div>
     );
 }
@@ -182,7 +183,7 @@ function clone_date(v: Date) {
     return new Date(clone(v));
 }
 const NullDate = new Date("Mon Sep 25 3000 08:58:33 GMT+0200");
-function Week({tasks, startDay, now, dayNum, timeDiff, calendarSizing}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, calendarSizing: CalendarSizing}) {
+function Week({tasks, startDay, now, calendarSizing}:{tasks: Task[], startDay: Date, now: Date, calendarSizing: CalendarSizing}) {
     // style specific things
     const [viewportWidth, setViewportWidth] = useState(0);
     const [newDay, setNewDay] = useState(NullDate);
@@ -195,13 +196,13 @@ function Week({tasks, startDay, now, dayNum, timeDiff, calendarSizing}:{tasks: T
     useEffect(() => {
         resize();
     }, []);
-    const dayWidth = viewportWidth / dayNum;
+    const dayWidth = viewportWidth / DayNum;
 
     let dayDate = clone_date(startDay);
 
     // day specific data
-    let days: Day[] = Array(dayNum);
-    for (let i = 0; i < dayNum; i++) {
+    let days: Day[] = Array(DayNum);
+    for (let i = 0; i < DayNum; i++) {
         // tasks
         let dayTasks: Task[] = [];
         if (tasks != undefined) {
@@ -291,7 +292,7 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     const [DragSideStartPos, setDragSideStartPos] = useState(0);
     const onDragStart = (event: any) => {
         setDragStartPos(event.screenY);
-        setDragSideStartPos(event.screenX);
+        setDragSideStartPos(event.clientX);
         setIsDragged(true);
 
         var crt = document.createElement("div");
@@ -300,18 +301,29 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
         event.dataTransfer.setDragImage(crt, 0, 0);
     }
     const onDrag = (event: any) => {
-        if (Math.abs(event.screenX - DragSideStartPos) > 100) {
-            let delta = event.screenX - DragSideStartPos;
-            let newTask: Task = clone(Task);
-            newTask.date = new Date(newTask.date);
-            newTask.date = add_day(newTask.date, delta > 0 ? 1 : -1);
-            setNewDay(newTask.date);
-            setTask(newTask);
-            setDragSideStartPos(event.screenX);
-        } else {
-            setOffset(offset + event.screenY - DragStartPos);
-            setDragStartPos(event.screenY);
-            applyTime();
+        let calendarElem = document.getElementById("CALENDAR");
+        if (calendarElem) {
+            let leftOffset = document.getElementsByClassName("workspace-ribbon side-dock-ribbon mod-left")[0].clientWidth + calendarElem.offsetLeft;
+            let relPos = event.clientX - leftOffset;
+            let startRelPos = DragSideStartPos - leftOffset;
+            let dayWidth = calendarElem.clientWidth / DayNum;
+            let mouseDay = Math.floor(relPos / dayWidth);
+            let mouseStartDay = Math.floor(startRelPos / dayWidth);
+//            console.log(relPos, startRelPos, dayWidth, event.clientX, calendarElem.offsetLeft);
+
+            if (mouseDay != mouseStartDay) {
+                let delta = event.clientX - DragSideStartPos;
+                let newTask: Task = clone(Task);
+                newTask.date = new Date(newTask.date);
+                newTask.date = add_day(newTask.date, delta > 0 ? 1 : -1);
+                setNewDay(newTask.date);
+                setTask(newTask);
+                setDragSideStartPos(event.clientX);
+            } else {
+                setOffset(offset + event.screenY - DragStartPos);
+                setDragStartPos(event.screenY);
+                applyTime();
+            }
         }
     }
     const onDragEnd = (event: any) => {
