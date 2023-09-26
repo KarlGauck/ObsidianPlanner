@@ -28,7 +28,7 @@ export const styling = {
         borderRadius: "5px"
     }),
     DayNameToday: css({
-        background: "orange"
+        backgroundColor: "orange"
     }),
     TimeStampWrapper: css({
         display: "flex",

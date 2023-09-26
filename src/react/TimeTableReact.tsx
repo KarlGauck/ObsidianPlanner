@@ -1,38 +1,130 @@
 import * as React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect, useReducer } from "react"
 
 import { Task } from "../logic/interfaces"
 import { styling } from "./TimeTableStyle"
 import { taskHandler } from "main";
 //import { getTaskListData, loadData, taskListData } from "src/logic/storage";
 
-const DeltaTimeStamp = 30;
-const TotalHeight = 3000;
-const StartHour = 0;
-const EndHour = 23;
-const TimeSectionDelta = TotalHeight / (EndHour + DeltaTimeStamp / 60 + 0.5);
-const TimeSectionStart = 0.25 * TimeSectionDelta;
-
 function add_day(date: Date, days: number) {
     date.setDate(date.getDate() + days);
     return date;
 }
 
+interface CalendarSizing {
+    DeltaTimeStamp: number, TotalHeight: number, StartHour: number, EndHour: number
+}
+function default_calendar_sizing(): CalendarSizing {
+    return {
+        DeltaTimeStamp: 30,
+        TotalHeight: 2500,
+        StartHour: 5,
+        EndHour: 23
+    }
+}
+function error_calendar_sizing() : CalendarSizing {
+    return {
+        DeltaTimeStamp: 360,
+        TotalHeight: 3000,
+        StartHour: 0,
+        EndHour: 24
+    }
+}
+function time_section_delta(calendarSizing: CalendarSizing): number {
+    return calendarSizing.TotalHeight / (calendarSizing.EndHour + calendarSizing.DeltaTimeStamp / 60 + 0.5);
+}
+function time_section_start(calendarSizing: CalendarSizing): number {
+    return 0.25 * time_section_delta(calendarSizing);
+}
+function decode_string(buf: number[]): string {
+    let str: string = "";
+    buf.forEach((ch) => {
+        str += String.fromCharCode(ch);
+    });
+    return str;
+}
+function equal(a: CalendarSizing, b: CalendarSizing): boolean {
+    return a.DeltaTimeStamp == b.DeltaTimeStamp &&
+           a.EndHour        == b.EndHour &&
+           a.StartHour      == b.StartHour &&
+           a.TotalHeight    == b.TotalHeight;
+}
+
+const fs = require('fs');
+const ConfigFileName = './timetable_config.json';
+function write_config_file(calendarSizing: CalendarSizing, callback: () => void) {
+    fs.writeFile(ConfigFileName, JSON.stringify(calendarSizing), (err: any) => { if (err) throw err; callback(); });
+}
+function read_config_file(callback: (c: CalendarSizing) => void) {
+    let ret;
+    fs.readFile(ConfigFileName, (err: any, data: any) => {
+        if (err) {
+            throw err;
+            return undefined;
+        }
+        ret = JSON.parse(decode_string(data));
+        callback(ret);
+    });
+}
+
+let eventReloadStack: (()=>void)[] = [];
+
 export function TimeTable({tasks}:{tasks: Task[]}) {
     const [start, setStart] = useState(new Date());
     const now = new Date();
+
+    // reload callback
     const [taskHandlerReloadDummy, taskHandlerReload] = useState(0);
     const taskHandlerReloadCallback = () => {
-        taskHandlerReload(taskHandlerReloadDummy + 1);
+        taskHandlerReload(clone(taskHandlerReloadDummy + 1));
     };
     taskHandler.add_reload_callback(taskHandlerReloadCallback);
+
+    // calendar size stuff
+    const [calendarSizing, setCalendarSizing] = useState(error_calendar_sizing());
+
+    // and here comes the ultimate hell of inception
+    read_config_file((checkData) => {
+        let configFileExists = true;
+        if (!checkData)
+            configFileExists = false;
+
+        const changeConfigState = () => {
+            if (equal(calendarSizing, error_calendar_sizing())) {
+                read_config_file((data) => {
+                    if (data) {
+                        setCalendarSizing(data);
+                    }
+                });
+            } else {
+                write_config_file(calendarSizing, () => {});
+            }
+        }
+            
+        if (!configFileExists) {
+            write_config_file(default_calendar_sizing(), changeConfigState);
+        } else {
+            changeConfigState();
+        }
+    });
     
     const scrollCallback = (event: any) => {
-        if (event.deltaY > 0 && event.shiftKey) {
-            setStart(clone_date(add_day(start, 1)));
+        if (event.shiftKey) {
+            setStart(clone_date(add_day(start, event.deltaY > 0 ? 1 : -1)));
         }
-        if (event.deltaY < 0 && event.shiftKey) {
-            setStart(clone_date(add_day(start, -1)));
+        if (event.ctrlKey) {
+            if (event.deltaY < 0) {
+                let cs = calendarSizing;
+                cs.DeltaTimeStamp /= 2;
+                cs.TotalHeight *= 2;
+                setCalendarSizing(clone(cs));
+            } else {
+                let cs = calendarSizing;
+                cs.DeltaTimeStamp *= 2;
+                cs.TotalHeight /= 2;
+                setCalendarSizing(clone(cs));
+            }
+            eventReloadStack.forEach((ers) => { ers(); });
         }
     };
 
@@ -43,16 +135,16 @@ export function TimeTable({tasks}:{tasks: Task[]}) {
 
     return (
         <>
-            <Calendar tasks={taskHandler.m_tasklist} startDay={start} now={now} dayNum={5} timeDiff={60} scroll={scrollCallback}/>
+            <Calendar calendarSizing={calendarSizing} tasks={taskHandler.m_tasklist} startDay={start} now={now} dayNum={5} timeDiff={60} scroll={scrollCallback}/>
         </>
     );
 }
 
-function Calendar({tasks, startDay, now, dayNum, timeDiff, scroll}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, scroll: (event: any)=>void}) {
+function Calendar({tasks, startDay, now, dayNum, timeDiff, scroll, calendarSizing}:{calendarSizing: CalendarSizing, tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, scroll: (event: any)=>void}) {
     return (
-        <div css={styling.CalendarWrapper} style={{ height: TotalHeight }} id="CALENDAR" onWheel={scroll}>
-            <TimeStamps/>
-            <Week tasks={tasks} startDay={startDay} now={now} dayNum={5} timeDiff={60}/>
+        <div css={styling.CalendarWrapper} style={{ height: calendarSizing.TotalHeight }} id="CALENDAR" onWheel={scroll}>
+            <TimeStamps calendarSizing={calendarSizing}/>
+            <Week tasks={tasks} startDay={startDay} now={now} dayNum={5} timeDiff={60} calendarSizing={calendarSizing}/>
         </div>
     );
 }
@@ -67,7 +159,7 @@ function same_day(a: Date, b: Date) : boolean {
     return a.getFullYear() == b.getFullYear()
         && a.getMonth()    == b.getMonth()
         && a.getDate()     == b.getDate();
-}
+} 
 function clone(v: any) {
     return JSON.parse(JSON.stringify(v));
 }
@@ -79,7 +171,7 @@ function clone_day(v: Day) {
 function clone_date(v: Date) {
     return new Date(clone(v));
 }
-function Week({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number}) {
+function Week({tasks, startDay, now, dayNum, timeDiff, calendarSizing}:{tasks: Task[], startDay: Date, now: Date, dayNum: number, timeDiff: number, calendarSizing: CalendarSizing}) {
     // style specific things
     const [viewportWidth, setViewportWidth] = useState(0);
     const resize = () => {
@@ -119,21 +211,19 @@ function Week({tasks, startDay, now, dayNum, timeDiff}:{tasks: Task[], startDay:
     }
     return (
         <div css={styling.WeekWrapper}>
-            { days.map((day, index) => { return <Day key={index} index={index} data={day}/> }) }
+            { days.map((day, index) => { return <Day key={index} index={index} data={day} calendarSizing={calendarSizing}/> }) }
         </div>
     );
 }
 
 const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-function Day({data, index}:{data:Day, index:number}) {
+function Day({data, index, calendarSizing}:{data:Day, index:number, calendarSizing: CalendarSizing}) {
     let timestampStyle = [styling.DayName];
     if (data.isToday) timestampStyle.push(styling.DayNameToday);
-
-    console.log(data.date.toLocaleDateString(), data.tasks);
     return (
         <>
             <div css={styling.DayWrapper} style={{ width: data.dayWidth + "px", maxHeight: "100%" }}>
-                { data.tasks.map((task, i) => { return <BetterEvent key={data.date.getTime() + i} index={index + "_" + i} task={task}/> }) }
+                { data.tasks.map((task, i) => { return <BetterEvent key={data.date.getTime() + i} index={index + "_" + i} task={task} calendarSizing={calendarSizing}/> }) }
             </div>
             <div css={timestampStyle} style={{ left: "calc(" + (data.dayWidth - 3) * index + "px + 34px)" }}>
                 { weekday[data.date.getDay()].slice(0, 3) + " " + data.date.toLocaleDateString() }
@@ -142,26 +232,40 @@ function Day({data, index}:{data:Day, index:number}) {
     );
 }
 
-function BetterEvent({task, index}:{task:Task, index:string}) {
+function BetterEvent({task, index, calendarSizing}:{task:Task, index:string, calendarSizing: CalendarSizing}) {
     const [height, setHeight] = useState(0);
     const id = "EVENT_CARD_" + index;
-    setTimeout(() => {
+
+    const [, updateState] = React.useState({});
+    const forceUpdate = React.useCallback(() => updateState({}), []);
+
+    useEffect(() => {
         let el = document.getElementById(id);
         if (el)
             setHeight(el.clientHeight);
-    }, 200);
+
+        eventReloadStack.push(() => {
+            forceUpdate();
+        });
+    });
+
+    let timeSectionStart = time_section_start(calendarSizing);
+    let timeSectionDelta = time_section_delta(calendarSizing);
 
     const getOffset = (date: Date) => {
-        return TimeSectionStart + TimeSectionDelta * time_to_dec(date.getHours(), date.getMinutes());
+        return timeSectionStart + timeSectionDelta * time_to_dec(date.getHours(), date.getMinutes());
     }
 
     const [Task, setTask] = useState(task);
-    const [offset, setOffset] = useState(getOffset(task.date));
+    //const [offset, setOffset] = useState(getOffset(task.date));
+    let offset = getOffset(task.date);
+    //if (offfset != offfset) setOffset(offfset);
+    const setOffset = (o: number) => { offset = o; };
 
     const applyTime = () => {
         let newTask: Task = clone(Task);
         newTask.date = new Date(newTask.date);
-        let decTime = (offset - TimeSectionStart) / TimeSectionDelta;
+        let decTime = (offset - timeSectionStart) / timeSectionDelta;
         newTask.date.setHours(Math.floor(decTime));
         newTask.date.setMinutes((decTime - Math.floor(decTime)) * 60);
         setTask(newTask);
@@ -211,13 +315,13 @@ function pad(num: number) {
     return num;
 }
 
-function get_times(delta: number) {
+function get_times(calendarSizing: CalendarSizing) {
     let times = [];
-    let hour = StartHour;
+    let hour = calendarSizing.StartHour;
     let minute = 0;
-    while (hour <= EndHour) {
+    while (hour <= calendarSizing.EndHour) {
         times.push(pad(hour) + ":" + pad(minute));
-        minute += delta;
+        minute += calendarSizing.DeltaTimeStamp;
         while (minute >= 60) {
             minute -= 60;
             hour++;
@@ -230,10 +334,10 @@ function time_to_dec(h: number, m: number) {
     return h + m / 60;
 }
 
-function TimeStamps() {
+function TimeStamps({calendarSizing}: {calendarSizing: CalendarSizing}) {
     return (
         <div css={styling.TimeStampWrapper}>
-            { get_times(DeltaTimeStamp).map((time, index) => <div key={index}>{time}</div>) }
+            { get_times(calendarSizing).map((time, index) => <div key={index}>{time}</div>) }
         </div>
     );
 }
