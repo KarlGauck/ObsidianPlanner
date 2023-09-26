@@ -3,13 +3,15 @@ import { Task } from "src/logic/interfaces"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import * as Icons from "@fortawesome/free-solid-svg-icons"
 import * as Storage from "src/logic/storage"
-import { DndContext, DragOverlay, useDndMonitor, useDraggable, useDroppable } from "@dnd-kit/core"
-import { Notice } from "obsidian"
+import { DragOverlay, useDndMonitor, useDroppable } from "@dnd-kit/core"
 import { Draggable } from "src/react/Draggable"
+import { createPortal } from "react-dom"
+
 
 export const ItemTypes = {
     KNIGHT: 'knights'
 }
+
 
 function getWeekOfDate(date: Date)
 {
@@ -18,13 +20,13 @@ function getWeekOfDate(date: Date)
     return Math.ceil(days / 7);
 }
 
+
 export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>, onChange: (tasks: Array<Task>) => void})
 {
     const isReRender = React.useRef(false)
 
     const filterTags = ["done", "passed", "today", "this week"]
     const sortingTags = ["date", "priority", "custom"]
-    console.log("Is initialized: xd" + Storage.initialized)
 
     const [tasks, setTasks] = React.useState<Array<Task>>([])
     const [customOrder, setCustomOrder] = React.useState(Array<number>())
@@ -36,10 +38,24 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
     const [dragId, setDragId] = React.useState(0)
     const [dragging, setIsDragging] = React.useState(false)
 
-    function setTaskPosition(taskIndex: number, position: number) {
-        let newArray = getSortedTasks().map((array) => array[1] as number)
-        newArray.remove(taskIndex)
-        newArray = [...newArray.slice(0, position), taskIndex, ...newArray.slice(position)]
+    const [isSearchMode, setIsSearchMode] = React.useState(false)
+    const [searchQuery, setSearchQuery] = React.useState("")
+
+    function setTaskPosition(dragIndex: number, targetIndex: number) {
+        let newArray = getSortedTasks().map((array) => array[1] as number) 
+        if (!sortDirection[2])
+            newArray = newArray.reverse()
+        let pos = newArray.indexOf(targetIndex)
+
+        let a1 = [...newArray]
+        a1.remove(dragIndex)
+        a1 = a1.slice(0, pos)
+
+        let a2 = [...newArray]
+        a2.remove(dragIndex)
+        a2 = a2.slice(pos)
+
+        newArray = [...a1, dragIndex, ...a2]
         setCustomOrder(newArray)
     }
 
@@ -82,8 +98,19 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function getFilteredTasks()
     {
-        return getSortedTasks().filter((array, index) => {
+        return getSortedTasks().filter((array) => {
             const task = array[0] as Task
+
+            if (searchQuery != "") 
+            {
+                let found = false
+                if (task.name.toLowerCase().contains(searchQuery.toLocaleLowerCase()))
+                    found = true
+                if (task.description.toLowerCase().contains(searchQuery.toLocaleLowerCase()))
+                    found = true
+                if (!found)
+                    return false
+            }
                 
             for (let i = 0; i < filter.length; i++)
             {
@@ -103,9 +130,7 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
                         filterValue = date.getFullYear() == now.getFullYear() && date.getDate() == now.getDate()
                         break
                     case 3:
-                        console.log("test: " + filter[i])
                         filterValue = date.getFullYear() == now.getFullYear() && getWeekOfDate(date) == getWeekOfDate(now)
-                        console.log(filterValue)
                         break
                 }
 
@@ -121,20 +146,20 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
 
     function getTaskJSX(index: number, task: Task)
     {
-        return <Draggable id={index} task={task}>
-            <ChangableTask key={index} id={index} task={task} 
-            onChange={(task) => {
-                const newTasks = tasks.slice()
-                newTasks[index] = task
-                setTasks(newTasks)
-            }}
-            onDelete={() => {
-                const newTasks = tasks.slice()
-                newTasks.remove(newTasks[index])
-                setTasks(newTasks)
-            }}     
-        />
-        </Draggable>
+        return <Draggable key={index} id={index.toString()} task={task}>
+            <ChangableTask id={index} task={task} 
+                onChange={(task) => {
+                    const newTasks = tasks.slice()
+                    newTasks[index] = task
+                    setTasks(newTasks)
+                }}
+                onDelete={() => {
+                    const newTasks = tasks.slice()
+                    newTasks.remove(newTasks[index])
+                    setTasks(newTasks)
+                }}     
+            />
+        </Draggable>    
     }
 
     React.useEffect(() => {
@@ -152,8 +177,6 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
             }
             else {
                 const data = await Storage.getTaskListData()
-                console.log("INITIAL RENDER")
-                console.log(data)
                 setTasks(data.tasks)
                 setFilter(data.filters)
                 setSorts(data.activeSorts)
@@ -180,11 +203,11 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
         },
         onDragEnd(event) {
             setIsDragging(false)
-        },
-        /*onDragOver(event) {
-            console.log(event.over?.data.current?.index)
-            setTaskPosition(event.active.data.current?.index, event.over?.data.current?.index)
-        }*/
+            setTaskPosition(parseInt(event.active.data.current?.index), event.over?.data.current?.index)
+            let newActiveSorts = [...sorts]
+            newActiveSorts.remove(2)
+            setSorts([2, ...newActiveSorts])
+        }
     })
 
     function submitTask(task: Task)
@@ -201,45 +224,84 @@ export default function TaskList({propTasks, onChange}: {propTasks: Array<Task>,
         completed: false,
         priority: 3
     }
-    
+
+    function changeQuery(event: React.ChangeEvent<HTMLInputElement>)
+    {
+        setSearchQuery(event.target.value)
+    }
+
+    function queryEnter(event: React.KeyboardEvent<HTMLInputElement>)
+    {
+        if (event.key == "Enter")
+            setIsSearchMode(false)
+    }
+
     return <div className="grid content-between h-full gap-5">
-        <div className={"flex-col overflow-auto scroll-smooth"}>
-            <div className="flex w-full items-center px-2">
+        <div className={"flex-col overflow-auto"}>
+            <div className="flex justify-between overflow-auto items-center">
                 {
-                    isFilterMode ? 
-                    <FontAwesomeIcon onClick={() => {setIsFilterMode(false)}} icon={Icons.faFilter} className="ring-1 ring-white rounded-md p-2 hover:ring-gray-500"/> :
-                    <FontAwesomeIcon onClick={() => {setIsFilterMode(true)}} icon={Icons.faArrowDownWideShort} className="ring-1 ring-white rounded-md p-2 hover:ring-gray-500"/>
+                    isSearchMode ? 
+                    <input type="text" 
+                        onKeyDown={queryEnter}
+                        autoFocus={true}
+                        value={searchQuery}
+                        placeholder="Search ..." className="w-full mx-2 my-3 ring-1 ring-white rounded-md p-2"
+                        onChange={changeQuery} >
+                    </input> : undefined
                 }
                 {
-                    isFilterMode ?
+                    isSearchMode ? undefined : isFilterMode ?
+                    <FontAwesomeIcon onClick={() => {setIsFilterMode(false)}} icon={Icons.faFilter} className="mx-2 ring-1 ring-white rounded-md p-2 hover:ring-gray-500"/> :
+                    <FontAwesomeIcon onClick={() => {setIsFilterMode(true)}} icon={Icons.faArrowDownWideShort} className="mx-2 ring-1 ring-white rounded-md p-2 hover:ring-gray-500"/>
+                }
+                {
+                    isSearchMode ? undefined : isFilterMode ?
                     <FilterSelection tags={filterTags} states={filter} onChange={setFilter}></FilterSelection> :
                     <SortSelection
                         tags={sortingTags} active={sorts} sortDirection={sortDirection} onActiveChange={setSorts} onDirectionChange={setSortDirection}
                     ></SortSelection>
                 }
+                <FontAwesomeIcon icon={Icons.faMagnifyingGlass} onClick={() => {setIsSearchMode(!isSearchMode)}} className="mx-2 ring-1 ring-white rounded-md p-2 hover:ring-gray-500"/>
             </div>
-            <div>
+            <div className="flex-col overflow-auto scroll-smooth">
                 {taskJSX.length == 0 ? <p className="text-center">Keine Tasks vorhanden</p> : taskJSX}
             </div>
         </div>
         <TaskForm initialTask={emptyTaskForm} onSubmit={submitTask} darkBackground={false}/>
+        {
+            createPortal(
+                <DragOverlay>
+                {
+                    dragging ? 
+                    <Task task={tasks[dragId]} closed={true}
+                        onDelete={() => {}}
+                        onEdit={() => {}}
+                        onToggleCompleted={() => {}}
+                    ></Task> :
+                    undefined
+                }
+                </DragOverlay>, document.body
+            )
+        }
     </div>
+        
 }
 
-function Task({task, id, onToggleCompleted, onEdit, onDelete}:
-     {task: Task, id: number, onToggleCompleted: () => void, onEdit: () => void, onDelete: () => void})
+
+function Task({task, closed, onToggleCompleted, onEdit, onDelete}:
+     {task: Task, closed: boolean, onToggleCompleted: () => void, onEdit: () => void, onDelete: () => void})
 {
-    return <div className="group p-1" /*style={style}*/>
-        <div className="flex flex-col gap-3 rounded-xl bg-gray-900 hover:bg-blue-950 p-2">
+    return <div className="group p-1">
+        <div className={"flex flex-col gap-3 rounded-xl bg-gray-900 hover:bg-blue-950 p-2" + (closed ? " opacity-80 ring-1 ring-white ring-opacity-100" : "")}>
             <div className="flex">
-                <p className={"text-center font-bold group-hover:hidden w-6 h-6 " + (task.completed ? "text-green-400" : "")}> {task.completed ? "✓" : "•"} </p>
+                <p className={"text-center font-bold " + (closed ? "" : "group-hover:hidden") + " w-6 h-6 " + (task.completed ? "text-green-400" : "")}> {task.completed ? "✓" : "•"} </p>
                 <p className="font-sans font-bold text-xl px-2 w-full"> {task.name} </p>
                 <div className="flex gap-2">
                     <button onClick={onEdit} className="w-6 h-6">🖉</button>
                     <button onClick={onDelete} className="w-6 h-6 border-double"> ️🗑 </button>
                 </div>
             </div>
-            <div className="hidden group-hover:flex gap-2 items-center transition-all">
+            <div className={"hidden " + (closed ? "" : "group-hover:flex") + " gap-2 items-center transition-all"}>
                 <div className="flex w-full">
                     <button onClick={onToggleCompleted} className={"w-6 h-6 " + (task.completed ? "text-green-400" : "")}> {task.completed ? "✓" : "•"} </button>
                     <pre className="w-2/3 font-light font-sans text-left text-sm text-gray-300 whitespace-pre-wrap"> {task.description} </pre>
@@ -256,6 +318,7 @@ function Task({task, id, onToggleCompleted, onEdit, onDelete}:
     </div>
     
 }
+
 
 function FilterSelection({tags, states, onChange}: {tags: string[], states: number[], onChange: (states: number[]) => void })
 {
@@ -277,10 +340,11 @@ function FilterSelection({tags, states, onChange}: {tags: string[], states: numb
         </div>
     )
 
-    return <div className="flex m-2 p-1 overflow-scroll no-scrollbar gap-3 items-center">
+    return <div className="flex w-full m-2 p-1 pr-0 overflow-scroll no-scrollbar gap-3 items-center">
         {buttons}
     </div>
 }
+
 
 function SortSelection({tags, active, sortDirection, onActiveChange, onDirectionChange}:
      {tags: Array<string>, active: number[], sortDirection: boolean[],
@@ -333,15 +397,13 @@ function SortSelection({tags, active, sortDirection, onActiveChange, onDirection
     }
 
     const activeFilterJSX = active.map((num) => getElement(tags[num], num, true))
-    console.log(active)
     const unactiveFilterJSX = tags.map((tag, index) => [tag, index])
         .filter((array, index) => !(active.includes(index)))
         .map((array) => {
-            console.log(array)
             return getElement(array[0] as string, array[1] as number, false)
         })
     
-    return <div className="flex items-center w-full h-full">
+    return <div className="flex items-center w-full h-full overflow-scroll no-scrollbar">
         <div className="flex m-3 gap-3 items-center w-full">
             {activeFilterJSX}
         </div>
@@ -350,6 +412,7 @@ function SortSelection({tags, active, sortDirection, onActiveChange, onDirection
         </div>
     </div>
 }
+
 
 function TaskForm({initialTask, onSubmit, darkBackground} : {initialTask: Task, onSubmit: (task: Task) => void, darkBackground: boolean})
 {
@@ -446,9 +509,17 @@ function TaskForm({initialTask, onSubmit, darkBackground} : {initialTask: Task, 
     </div>
 }
 
+
 function ChangableTask({task, id, onChange, onDelete}: {task: Task, id: number, onChange: (task: Task) => void, onDelete: () => void})
 {
     const [isEditMode, setIsEditMode] = React.useState(false)
+
+    const {setNodeRef} = useDroppable({
+        id: `droppable:${id}`,
+        data: {
+            index: id
+        }
+    })
 
     function submitChange(task: Task)
     {
@@ -463,15 +534,15 @@ function ChangableTask({task, id, onChange, onDelete}: {task: Task, id: number, 
         onChange(newTask)
     }
 
-    const editJSX = <div>
-        <TaskForm initialTask={task} onSubmit={submitChange} darkBackground={true}></TaskForm>
-    </div>
+    const editJSX = <TaskForm initialTask={task} onSubmit={submitChange} darkBackground={true}></TaskForm>
+    const displayJSX = <Task task={task} closed={false} onToggleCompleted={toggleCompleted} onEdit={() => {setIsEditMode(true)}} onDelete={onDelete}></Task>
 
-    const displayJSX = <div>
-        <Task task={task} id={id} onToggleCompleted={toggleCompleted} onEdit={() => {setIsEditMode(true)}} onDelete={onDelete}></Task>
-    </div>
+    return <div ref={setNodeRef}>
+        { 
+            isEditMode ? 
+            editJSX :
+            displayJSX
+        }
+    </div> 
 
-    if (isEditMode)
-        return editJSX
-    return displayJSX
 }
