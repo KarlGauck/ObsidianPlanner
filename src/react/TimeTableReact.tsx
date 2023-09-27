@@ -20,7 +20,7 @@ function default_calendar_sizing(): CalendarSizing {
     return {
         DeltaTimeStamp: 30,
         TotalHeight: 3000,
-        StartHour: 5,
+        StartHour: 0,
         EndHour: 23
     }
 }
@@ -35,7 +35,7 @@ function error_calendar_sizing() : CalendarSizing {
 }
 
 function time_section_delta(calendarSizing: CalendarSizing): number {
-    return calendarSizing.TotalHeight / (calendarSizing.EndHour + calendarSizing.DeltaTimeStamp / 60 + 0.5);
+    return calendarSizing.TotalHeight / ((calendarSizing.EndHour - calendarSizing.StartHour) + calendarSizing.DeltaTimeStamp / 60 + 0.5);
 }
 
 function time_section_start(calendarSizing: CalendarSizing): number {
@@ -271,8 +271,9 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
 
     useEffect(() => {
         let el = document.getElementById(id);
-        if (el)
-            setHeight(el.clientHeight);
+        if (el) {
+            //setHeight(el.clientHeight);
+        }
 
         eventReloadStack.push(() => {
             forceUpdate();
@@ -284,7 +285,7 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     let timeSectionDelta = time_section_delta(calendarSizing);
 
     const getOffset = (date: Date) => {
-        return timeSectionStart + timeSectionDelta * time_to_dec(date.getHours(), date.getMinutes());
+        return timeSectionStart + timeSectionDelta * time_to_dec(date.getHours() - calendarSizing.StartHour, date.getMinutes());
     }
 
     const [IsDragged, setIsDragged] = useState(false);
@@ -297,9 +298,14 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     const applyTime = () => {
         let newTask: Task = clone(Task);
         newTask.date = new Date(newTask.date);
-        let decTime = (offset - timeSectionStart) / timeSectionDelta;
+        let decTime = (offset - timeSectionStart) / timeSectionDelta + calendarSizing.StartHour;
+        decTime = Math.clamp(decTime, calendarSizing.StartHour, calendarSizing.EndHour);
+
+        // stay on the same day
         newTask.date.setHours(Math.floor(decTime));
         newTask.date.setMinutes((decTime - Math.floor(decTime)) * 60);
+        newTask.date.setFullYear(Task.date.getFullYear(), Task.date.getMonth(), Task.date.getDate());
+
         setTask(newTask);
     }
     const [DragStartPos, setDragStartPos] = useState(0);
