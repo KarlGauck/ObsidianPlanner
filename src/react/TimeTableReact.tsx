@@ -15,6 +15,7 @@ const DayNum = 5;
 interface CalendarSizing {
     DeltaTimeStamp: number, TotalHeight: number, StartHour: number, EndHour: number
 }
+
 function default_calendar_sizing(): CalendarSizing {
     return {
         DeltaTimeStamp: 30,
@@ -23,6 +24,7 @@ function default_calendar_sizing(): CalendarSizing {
         EndHour: 23
     }
 }
+
 function error_calendar_sizing() : CalendarSizing {
     return {
         DeltaTimeStamp: 360,
@@ -31,12 +33,15 @@ function error_calendar_sizing() : CalendarSizing {
         EndHour: 24
     }
 }
+
 function time_section_delta(calendarSizing: CalendarSizing): number {
     return calendarSizing.TotalHeight / (calendarSizing.EndHour + calendarSizing.DeltaTimeStamp / 60 + 0.5);
 }
+
 function time_section_start(calendarSizing: CalendarSizing): number {
     return 0.25 * time_section_delta(calendarSizing);
 }
+
 function decode_string(buf: number[]): string {
     let str: string = "";
     buf.forEach((ch) => {
@@ -44,6 +49,7 @@ function decode_string(buf: number[]): string {
     });
     return str;
 }
+
 function equal(a: CalendarSizing, b: CalendarSizing): boolean {
     return a.DeltaTimeStamp == b.DeltaTimeStamp &&
            a.EndHour        == b.EndHour &&
@@ -56,6 +62,7 @@ const ConfigFileName = 'timetable_config.json';
 function write_config_file(calendarSizing: CalendarSizing, callback: () => void) {
     fs.writeFile(ConfigFileName, JSON.stringify(calendarSizing), (err: any) => { if (err) throw err; callback(); });
 }
+
 function read_config_file(callback: (c: CalendarSizing) => void) {
     let ret;
     fs.readFile(ConfigFileName, (err: any, data: any) => {
@@ -69,6 +76,7 @@ function read_config_file(callback: (c: CalendarSizing) => void) {
         callback(ret);
     });
 }
+
 function validate(calendarSizing: CalendarSizing): CalendarSizing {
     calendarSizing.DeltaTimeStamp = Math.clamp(calendarSizing.DeltaTimeStamp, 15, 60);
     calendarSizing.StartHour = Math.clamp(calendarSizing.StartHour, 0, 22);
@@ -159,6 +167,7 @@ function Calendar({tasks, startDay, now, scroll, calendarSizing}:{calendarSizing
         </div>
     );
 }
+
 interface Day {
     tasks: Task[],
     date: Date,
@@ -166,22 +175,27 @@ interface Day {
     // style things
     dayWidth: number,
 }
+
 function same_day(a: Date, b: Date) : boolean {
     return a.getFullYear() == b.getFullYear()
         && a.getMonth()    == b.getMonth()
         && a.getDate()     == b.getDate();
 } 
+
 function clone(v: any) {
     return JSON.parse(JSON.stringify(v));
 }
+
 function clone_day(v: Day) {
     let cloned = clone(v);
     v.date = new Date(v.date);
     return v;
 }
+
 function clone_date(v: Date) {
     return new Date(clone(v));
 }
+
 const NullDate = new Date("Mon Sep 25 3000 08:58:33 GMT+0200");
 function Week({tasks, startDay, now, calendarSizing}:{tasks: Task[], startDay: Date, now: Date, calendarSizing: CalendarSizing}) {
     // style specific things
