@@ -293,7 +293,6 @@ export default function TaskList({propTasks, onChange, tasklist}: {propTasks: Ar
 function Task({task, closed, onToggleCompleted, onEdit, onDelete}:
      {task: Task, closed: boolean, onToggleCompleted: () => void, onEdit: () => void, onDelete: () => void})
 {
-    console.log(task)
     return <div className="group p-1">
         <div className={"flex flex-col gap-3 rounded-xl bg-gray-900 hover:bg-blue-950 p-2" + (closed ? " opacity-80 ring-1 ring-white ring-opacity-100" : "")}>
             <div className="flex">
