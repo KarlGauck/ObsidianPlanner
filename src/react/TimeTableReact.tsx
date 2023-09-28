@@ -335,9 +335,11 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
                 let delta = event.clientX - DragSideStartPos;
                 let newTask: Task = clone(Task);
                 newTask.date = new Date(newTask.date);
-                newTask.date = add_day(newTask.date, delta > 0 ? 1 : -1);
+                newTask.date = add_day(newTask.date, mouseDay - mouseStartDay);
                 setNewDay(newTask.date);
                 setTask(newTask);
+                console.log(Task.date);
+                console.log(newTask.date);
                 setDragSideStartPos(event.clientX);
             } else {
                 setOffset(offset + event.screenY - DragStartPos);
