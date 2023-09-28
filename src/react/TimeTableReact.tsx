@@ -368,18 +368,30 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
         setNewDay(NullDate);
     }
 
+    const lockTask = () => {
+        let newTask = clone(Task);
+        newTask.date = new Date(newTask.date);
+        newTask.locked = !newTask.locked;
+        setTask(newTask);
+        taskHandler.change_task(Task);
+    }
+
     let styles = [styling.EventWrapper];
     if (IsDragged) {
         styles.push(styling.EventWrapperDragged);
+    }
+    if (Task.locked) {
+        styles.push(styling.EventLocked);
     }
 
     let durH = Math.floor(Task.duration / 60);
     let durM = (Task.duration % 60);
     return (
-        <div draggable="true"
+        <div draggable={ Task.locked ? "false" : "true" }
             id={id} css={styles}
             style={{ transform: "translateY(" + offset + "px)", marginBottom: -height, zIndex: IsDragged ? 10 : 0, minHeight: height }}
             onDragStart={onDragStart} onDrag={onDrag} onDragEnd={onDragEnd}
+            onClick={ lockTask }
         >
             <div css={styling.EventHeading}>{Task.name}</div>
             <div css={styling.EventTime}>{ pad(Task.date.getHours()) + ":" + pad(Task.date.getMinutes()) }</div>

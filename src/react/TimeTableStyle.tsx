@@ -67,4 +67,7 @@ export const styling = {
     EventTime: css({
         margin: 3
     }),
+    EventLocked: css({
+        backgroundColor: "#4d0000"
+    }),
 }
