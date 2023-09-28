@@ -18,16 +18,17 @@ function random_int() {
     return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
   }
 
-function make_task() {
+export function make_task() {
     let task: Task = {
         completed: false,
         date: new Date(),
         description: "",
-        duration: 200,
+        duration: 120,
         id: random_int(),
         name: "no name",
         priority: 0,
-        isEvent: false
+        isEvent: false,
+        locked: false
     };
     return task;
 }

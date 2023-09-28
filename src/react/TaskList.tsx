@@ -6,6 +6,7 @@ import { DragOverlay, useDndMonitor, useDroppable } from "@dnd-kit/core"
 import { Draggable } from "src/react/Draggable"
 import { createPortal } from "react-dom"
 import { taskHandler } from "main"
+import { make_task } from "src/logic/TaskHandler"
 
 
 export const ItemTypes = {
@@ -216,17 +217,6 @@ export default function TaskList({propTasks, onChange, tasklist}: {propTasks: Ar
         taskHandler.change_task(task);
     }
 
-    const emptyTaskForm: Task = {
-        name: "",
-        description: "",
-        date: new Date(),
-        completed: false,
-        priority: 3,
-        duration: 200,
-        id: 0,
-        isEvent: false
-    }
-
     function changeQuery(event: React.ChangeEvent<HTMLInputElement>)
     {
         setSearchQuery(event.target.value)
@@ -269,7 +259,7 @@ export default function TaskList({propTasks, onChange, tasklist}: {propTasks: Ar
                 {taskJSX.length == 0 ? <p className="text-center">Keine Tasks vorhanden</p> : taskJSX}
             </div>
         </div>
-        <TaskForm initialTask={emptyTaskForm} onSubmit={submitTask} darkBackground={false}/>
+        <TaskForm initialTask={make_task()} onSubmit={submitTask} darkBackground={false}/>
         {
             createPortal(
                 <DragOverlay>

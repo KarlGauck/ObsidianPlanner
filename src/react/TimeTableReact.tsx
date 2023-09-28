@@ -268,14 +268,23 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     const [, updateState] = React.useState({});
     const forceUpdate = React.useCallback(() => updateState({}), []);
 
+    let timeSectionStart = time_section_start(calendarSizing);
+    const [timeSectionDelta, setTimeSectionDelta] = useState(0);
+    if (timeSectionDelta != time_section_delta(calendarSizing)) {
+        setTimeSectionDelta(time_section_delta(calendarSizing));
+    }
+
+    const [height, setHeight] = useState(0);
+
+    const getHeight = (minutes: number): number => {
+        return time_to_dec(0, minutes) * timeSectionDelta;
+    }
+
     useEffect(() => {
         let el = document.getElementById(id);
         if (el) {
-            let supposedHeight = getHeight(task.duration);
             if (height < el.clientHeight) {
                 setHeight(el.clientHeight);
-            } else if (height != supposedHeight && supposedHeight > el.clientHeight) {
-                setHeight(supposedHeight);
             }
         }
 
@@ -283,15 +292,12 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
             forceUpdate();
             setOffset(getOffset(task.date));
         });
-    });
+    }, []);
 
-    let timeSectionStart = time_section_start(calendarSizing);
-    let timeSectionDelta = time_section_delta(calendarSizing);
-
-    const getHeight = (minutes: number): number => {
-        return time_to_dec(0, minutes) * timeSectionDelta;
+    let supposedHeight = getHeight(task.duration);
+    if (height != supposedHeight && supposedHeight > 20) {
+        setHeight(supposedHeight);
     }
-    const [height, setHeight] = useState(getHeight(task.duration));
 
     const getOffset = (date: Date) => {
         return timeSectionStart + timeSectionDelta * time_to_dec(date.getHours() - calendarSizing.StartHour, date.getMinutes());
@@ -363,9 +369,12 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     }
 
     let styles = [styling.EventWrapper];
-    if (IsDragged)
+    if (IsDragged) {
         styles.push(styling.EventWrapperDragged);
+    }
 
+    let durH = Math.floor(Task.duration / 60);
+    let durM = (Task.duration % 60);
     return (
         <div draggable="true"
             id={id} css={styles}
@@ -374,7 +383,7 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
         >
             <div css={styling.EventHeading}>{Task.name}</div>
             <div css={styling.EventTime}>{ pad(Task.date.getHours()) + ":" + pad(Task.date.getMinutes()) }</div>
-            <div css={styling.EventTime}>{ Math.floor(Task.duration / 60) + "h " + (Task.duration % 60) + "min" }</div>
+            <div css={styling.EventTime}>{ (durH != 0 ? (durH + "h ") : "") + (durM != 0 ? (durM + "min") : "") }</div>
         </div>
     );
 }

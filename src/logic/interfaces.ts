@@ -6,5 +6,6 @@ export interface Task {
     priority: number,
     duration: number, // duration in minutes
     id: number,
-    isEvent: boolean
+    isEvent: boolean,
+    locked: boolean
 }
