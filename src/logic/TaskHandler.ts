@@ -23,7 +23,7 @@ function make_task() {
         completed: false,
         date: new Date(),
         description: "",
-        duration: 1,
+        duration: 200,
         id: random_int(),
         name: "no name",
         priority: 0,

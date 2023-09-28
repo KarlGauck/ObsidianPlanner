@@ -263,7 +263,6 @@ function Day({data, index, calendarSizing, setNewDay, newDay}:{data:Day, index:n
 }
 
 function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:string, calendarSizing: CalendarSizing, setNewDay: (date: Date)=>void}) {
-    const [height, setHeight] = useState(0);
     const id = "EVENT_CARD_" + index;
 
     const [, updateState] = React.useState({});
@@ -272,7 +271,12 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     useEffect(() => {
         let el = document.getElementById(id);
         if (el) {
-            //setHeight(el.clientHeight);
+            let supposedHeight = getHeight(task.duration);
+            if (height < el.clientHeight) {
+                setHeight(el.clientHeight);
+            } else if (height != supposedHeight && supposedHeight > el.clientHeight) {
+                setHeight(supposedHeight);
+            }
         }
 
         eventReloadStack.push(() => {
@@ -283,6 +287,11 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
 
     let timeSectionStart = time_section_start(calendarSizing);
     let timeSectionDelta = time_section_delta(calendarSizing);
+
+    const getHeight = (minutes: number): number => {
+        return time_to_dec(0, minutes) * timeSectionDelta;
+    }
+    const [height, setHeight] = useState(getHeight(task.duration));
 
     const getOffset = (date: Date) => {
         return timeSectionStart + timeSectionDelta * time_to_dec(date.getHours() - calendarSizing.StartHour, date.getMinutes());
@@ -329,7 +338,6 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
             let dayWidth = calendarElem.clientWidth / DayNum;
             let mouseDay = Math.floor(relPos / dayWidth);
             let mouseStartDay = Math.floor(startRelPos / dayWidth);
-//            console.log(relPos, startRelPos, dayWidth, event.clientX, calendarElem.offsetLeft);
 
             if (mouseDay != mouseStartDay) {
                 let delta = event.clientX - DragSideStartPos;
@@ -338,8 +346,6 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
                 newTask.date = add_day(newTask.date, mouseDay - mouseStartDay);
                 setNewDay(newTask.date);
                 setTask(newTask);
-                console.log(Task.date);
-                console.log(newTask.date);
                 setDragSideStartPos(event.clientX);
             } else {
                 setOffset(offset + event.screenY - DragStartPos);
@@ -363,11 +369,12 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
     return (
         <div draggable="true"
             id={id} css={styles}
-            style={{ transform: "translateY(" + offset + "px)", marginBottom: -height, zIndex: IsDragged ? 10 : 0 }}
+            style={{ transform: "translateY(" + offset + "px)", marginBottom: -height, zIndex: IsDragged ? 10 : 0, minHeight: height }}
             onDragStart={onDragStart} onDrag={onDrag} onDragEnd={onDragEnd}
         >
             <div css={styling.EventHeading}>{Task.name}</div>
             <div css={styling.EventTime}>{ pad(Task.date.getHours()) + ":" + pad(Task.date.getMinutes()) }</div>
+            <div css={styling.EventTime}>{ Math.floor(Task.duration / 60) + "h " + (Task.duration % 60) + "min" }</div>
         </div>
     );
 }

@@ -222,7 +222,7 @@ export default function TaskList({propTasks, onChange, tasklist}: {propTasks: Ar
         date: new Date(),
         completed: false,
         priority: 3,
-        duration: 1,
+        duration: 200,
         id: 0,
         isEvent: false
     }
