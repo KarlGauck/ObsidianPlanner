@@ -373,7 +373,7 @@ function BetterEvent({task, index, calendarSizing, setNewDay}:{task:Task, index:
         newTask.date = new Date(newTask.date);
         newTask.locked = !newTask.locked;
         setTask(newTask);
-        taskHandler.change_task(Task);
+        taskHandler.change_task(newTask);
     }
 
     let styles = [styling.EventWrapper];
